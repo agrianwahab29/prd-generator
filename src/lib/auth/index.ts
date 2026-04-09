@@ -1,22 +1,85 @@
 import { betterAuth } from "better-auth";
-import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
-import { getDb } from "@/db";
-import * as schema from "@/lib/auth/db-schema";
+import { Pool } from "pg";
+
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error("DATABASE_URL environment variable is not set");
+}
 
 export const auth = betterAuth({
-  database: drizzleAdapter(
-    // Lazy — getDb() is only called when auth actually needs the database
-    {
-      get db() {
-        return getDb();
+  database: new Pool({
+    connectionString,
+    ssl: {
+      rejectUnauthorized: false,
+    },
+  }),
+
+  // Use UUID for ID generation (compatible with PostgreSQL)
+  advanced: {
+    database: {
+      generateId: () => crypto.randomUUID(),
+    },
+  },
+
+  // Handle database hooks to ensure required fields
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user) => {
+          return {
+            data: {
+              ...user,
+              emailVerified: user.emailVerified ?? false,
+            },
+          };
+        },
       },
-    } as Parameters<typeof drizzleAdapter>[0],
-    {
-      provider: "pg",
-      schema: schema,
-    }
-  ),
+    },
+  },
+
+  // Map Better Auth camelCase fields to database snake_case columns
+  user: {
+    fields: {
+      emailVerified: "email_verified",
+      createdAt: "created_at",
+      updatedAt: "updated_at",
+    },
+  },
+
+  session: {
+    fields: {
+      userId: "user_id",
+      expiresAt: "expires_at",
+      ipAddress: "ip_address",
+      userAgent: "user_agent",
+      createdAt: "created_at",
+      updatedAt: "updated_at",
+    },
+  },
+
+  account: {
+    fields: {
+      userId: "user_id",
+      accountId: "account_id",
+      providerId: "provider_id",
+      accessToken: "access_token",
+      refreshToken: "refresh_token",
+      idToken: "id_token",
+      accessTokenExpiresAt: "access_token_expires_at",
+      refreshTokenExpiresAt: "refresh_token_expires_at",
+      createdAt: "created_at",
+      updatedAt: "updated_at",
+    },
+  },
+
+  verification: {
+    fields: {
+      expiresAt: "expires_at",
+      createdAt: "created_at",
+      updatedAt: "updated_at",
+    },
+  },
 
   emailAndPassword: {
     enabled: true,

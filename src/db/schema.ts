@@ -1,9 +1,12 @@
 import { pgTable, uuid, text, timestamp } from "drizzle-orm/pg-core";
-import { user } from "@/lib/auth/db-schema";
+import { user, session, account, verification } from "@/lib/auth/db-schema";
+
+// Re-export auth tables so they're included in migrations
+export { user, session, account, verification };
 
 export const projects = pgTable("projects", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id")
+  userId: text("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
@@ -15,7 +18,7 @@ export const projects = pgTable("projects", {
 });
 
 export const userSettings = pgTable("user_settings", {
-  userId: uuid("user_id")
+  userId: text("user_id")
     .primaryKey()
     .references(() => user.id, { onDelete: "cascade" }),
   apiKeyEncrypted: text("api_key_encrypted"),
