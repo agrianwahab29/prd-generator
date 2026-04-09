@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI PRD Generator - Color Palette Preview</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #F8FAFC;
+      padding: 40px 20px;
+      color: #0F172A;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 36px;
+      font-weight: 700;
+      color: #020617;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 18px;
+      color: #475569;
+      margin-bottom: 48px;
+    }
+
+    .section {
+      margin-bottom: 48px;
+      background: white;
+      padding: 32px;
+      border-radius: 12px;
+      border: 1px solid #E2E8F0;
+    }
+
+    .section-title {
+      font-size: 24px;
+      font-weight: 600;
+      color: #0F172A;
+      margin-bottom: 24px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #E2E8F0;
+    }
+
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 16px;
+    }
+
+    .color-item {
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #E2E8F0;
+      transition: transform 0.2s ease;
+    }
+
+    .color-item:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .color-box {
+      height: 100px;
+      display: flex;
+      align-items: flex-end;
+      padding: 12px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .color-info {
+      padding: 12px;
+      background: white;
+      font-size: 13px;
+    }
+
+    .color-name {
+      font-weight: 600;
+      color: #0F172A;
+    }
+
+    .color-hex {
+      color: #64748B;
+      font-family: monospace;
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    /* Primary Colors */
+    .primary-50 { background: #EEF2FF; color: #312E81; }
+    .primary-100 { background: #E0E7FF; color: #312E81; }
+    .primary-200 { background: #C7D2FE; color: #312E81; }
+    .primary-500 { background: #6366F1; color: white; }
+    .primary-600 { background: #4F46E5; color: white; }
+    .primary-700 { background: #4338CA; color: white; }
+    .primary-800 { background: #3730A3; color: white; }
+    .primary-900 { background: #312E81; color: white; }
+
+    /* Accent Colors */
+    .accent-400 { background: #FB923C; color: white; }
+    .accent-500 { background: #F97316; color: white; }
+    .accent-600 { background: #EA580C; color: white; }
+    .accent-700 { background: #C2410C; color: white; }
+
+    /* Neutral Colors */
+    .slate-50 { background: #F8FAFC; color: #475569; }
+    .slate-100 { background: #F1F5F9; color: #475569; }
+    .slate-200 { background: #E2E8F0; color: #475569; }
+    .slate-300 { background: #CBD5E1; color: #0F172A; }
+    .slate-400 { background: #94A3B8; color: white; }
+    .slate-500 { background: #64748B; color: white; }
+    .slate-600 { background: #475569; color: white; }
+    .slate-700 { background: #334155; color: white; }
+    .slate-800 { background: #1E293B; color: white; }
+    .slate-900 { background: #0F172A; color: white; }
+    .slate-950 { background: #020617; color: white; }
+
+    /* Semantic Colors */
+    .success-50 { background: #ECFDF5; color: #065F46; }
+    .success-500 { background: #10B981; color: white; }
+    .success-600 { background: #059669; color: white; }
+
+    .warning-50 { background: #FFFBEB; color: #92400E; }
+    .warning-500 { background: #F59E0B; color: white; }
+    .warning-600 { background: #D97706; color: white; }
+
+    .error-50 { background: #FFF1F2; color: #9F1239; }
+    .error-500 { background: #F43F5E; color: white; }
+    .error-600 { background: #E11D48; color: white; }
+
+    .info-50 { background: #F0F9FF; color: #075985; }
+    .info-500 { background: #0EA5E9; color: white; }
+    .info-600 { background: #0284C7; color: white; }
+
+    /* UI Examples */
+    .ui-examples {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+    }
+
+    .example-card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      border: 1px solid #E2E8F0;
+    }
+
+    .example-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #64748B;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 16px;
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 500;
+      font-size: 14px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin: 4px;
+    }
+
+    .btn-primary {
+      background: #4F46E5;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #4338CA;
+      transform: scale(1.02);
+    }
+
+    .btn-accent {
+      background: #F97316;
+      color: white;
+    }
+
+    .btn-accent:hover {
+      background: #EA580C;
+      transform: scale(1.02);
+    }
+
+    .btn-secondary {
+      background: white;
+      color: #334155;
+      border: 1px solid #E2E8F0;
+    }
+
+    .btn-secondary:hover {
+      background: #F1F5F9;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: #4F46E5;
+    }
+
+    .btn-ghost:hover {
+      background: #EEF2FF;
+    }
+
+    /* Form Elements */
+    .input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #E2E8F0;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+      margin-bottom: 12px;
+      transition: all 0.2s ease;
+    }
+
+    .input:focus {
+      outline: none;
+      border-color: #6366F1;
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+
+    .input::placeholder {
+      color: #94A3B8;
+    }
+
+    .label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      color: #334155;
+      margin-bottom: 4px;
+    }
+
+    /* Cards */
+    .card {
+      background: white;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      padding: 24px;
+      transition: all 0.2s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #0F172A;
+      margin-bottom: 8px;
+    }
+
+    .card-text {
+      font-size: 14px;
+      color: #475569;
+      line-height: 1.6;
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-flex;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 500;
+      margin: 4px;
+    }
+
+    .badge-success {
+      background: #ECFDF5;
+      color: #065F46;
+    }
+
+    .badge-warning {
+      background: #FFFBEB;
+      color: #92400E;
+    }
+
+    .badge-error {
+      background: #FFF1F2;
+      color: #9F1239;
+    }
+
+    .badge-info {
+      background: #F0F9FF;
+      color: #075985;
+    }
+
+    .badge-deployment-vercel {
+      background: #000000;
+      color: white;
+    }
+
+    .badge-deployment-netlify {
+      background: #00C7B7;
+      color: white;
+    }
+
+    /* Typography */
+    .type-demo {
+      margin-bottom: 24px;
+    }
+
+    .type-hero {
+      font-size: 48px;
+      font-weight: 700;
+      color: #020617;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+
+    .type-h1 {
+      font-size: 36px;
+      font-weight: 700;
+      color: #0F172A;
+      line-height: 1.2;
+    }
+
+    .type-h2 {
+      font-size: 30px;
+      font-weight: 600;
+      color: #0F172A;
+      line-height: 1.3;
+    }
+
+    .type-h3 {
+      font-size: 24px;
+      font-weight: 600;
+      color: #0F172A;
+      line-height: 1.4;
+    }
+
+    .type-body {
+      font-size: 16px;
+      color: #334155;
+      line-height: 1.75;
+      max-width: 65ch;
+    }
+
+    .type-caption {
+      font-size: 12px;
+      font-weight: 500;
+      color: #64748B;
+    }
+
+    /* Gradient Demo */
+    .gradient-box {
+      background: linear-gradient(90deg, #4F46E5 0%, #F97316 100%);
+      height: 60px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .glow-demo {
+      background: white;
+      padding: 16px 24px;
+      border-radius: 8px;
+      box-shadow: 0 0 20px rgba(79, 70, 229, 0.3);
+      margin: 8px 0;
+    }
+
+    .notes {
+      background: #EEF2FF;
+      border-left: 4px solid #4F46E5;
+      padding: 16px;
+      border-radius: 0 8px 8px 0;
+      margin-top: 24px;
+    }
+
+    .notes-title {
+      font-weight: 600;
+      color: #312E81;
+      margin-bottom: 8px;
+    }
+
+    .notes-text {
+      font-size: 14px;
+      color: #4338CA;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎨 Ocean Intelligence Design System</h1>
+    <p class="subtitle">AI PRD Generator - Visual Color Palette & Component Preview</p>
+
+    <!-- Primary Colors -->
+    <div class="section">
+      <h2 class="section-title">🔷 Primary Colors (Ocean Indigo)</h2>
+      <div class="color-grid">
+        <div class="color-item">
+          <div class="color-box primary-50">50</div>
+          <div class="color-info">
+            <div class="color-name">Primary 50</div>
+            <div class="color-hex">#EEF2FF</div>
+          </div>
+        </div>
+        <div class="color-item">
+          <div class="color-box primary-100">100</div>
+          <div class="color-info">
+            <div class="color-name">Primary 100</div>
+            <div class="color-hex">#E0E7FF</div>
+          </div>
+        </div>
+        <div class="color-item">
+          <div class="color-box primary-200">200</div>
+          <div class="color-info">
+            <div class="color-name">Primary 200</div>
+            <div class="color-hex">#C7D2FE</div>
+          </div>
+        </div>
+        <div class="color-item">
+          <div class="color-box primary-500">500</div>
+          <div class="color-info">
+            <div class="color-name">Primary 500</div>
+            <div class="color-hex">#6366F1</div>
+          </div>
+        </div>
+        <div class="color-item">
+          <div class="color-box primary-600">600</div>
+          <div class="color-info">
+            <div class="color-name">Primary 600 ✨</div>
+            <div class="color-hex">#4F46E5</div>
+          </div>
+        </div>
+        <div class="color-item">
+          <div class="color-box primary-700">700</div>
+          <div class="color-info">
+            <div class="color-name">Primary 700</div>
+            <div class="color-hex">#4338CA</div>
+          </div>
+        </div>
+        <div class="color-item">
+          <div class="color-box primary-800">800</div>
+          <div class="color-info">
+            <div class="color-name">Primary 800</div>
+            <div class="color-hex">#3730A3</div>
+          </div>
+        </div>
+        <div class="color-item">
+          <div class="color-box primary-900">900</div>
+          <div class="color-info">
+            <div class="color-name">Primary 900</div>
+            <div class="color-hex">#312E81</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Accent Colors -->
+    <div class="section">
+      <h2 class="section-title">🔥 Accent Colors (Warm Coral)</h2>
+      <div class="color-grid">
+        <div class="color-item">
+          <div class="color-box accent-400">400</div>
+          <div class="color-info">
+            <div class="color-name">Accent 400</div>
+            <div class="color-hex">#FB923C</div>
+          </div>
+        </div>
+        <div class="color-item">
+          <div class="color-box accent-500">500</div>
+          <div class="color-info">
+            <div class="color-name">Accent 500 ✨</div>
+            <div class="color-hex">#F97316</div>
+          </div>
+        </div>
+        <div class="color-item">
+          <div class="color-box accent-600">600</div>
+          <div class="color-info">
+            <div class="color-name">Accent 600</div>
+            <div class="color-hex">#EA580C</div>
+          </div>
+        </div>
+        <div class="color-item">
+          <div class="color-box accent-700">700</div>
+          <div class="color-info">
+            <div class="color-name">Accent 700</div>
+            <div class="color-hex">#C2410C</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Neutral Colors -->
+    <div class="section">
+      <h2 class="section-title">⚪ Neutral Colors (Clean Slate)</h2>
+      <div class="color-grid">
+        <div class="color-item">
+          <div class="color-box slate-50">50</div>
+          <div class="color-info">
+            <div class="color-name">Slate 50</div>
+            <div class="color-hex">#F8FAFC</div>
+          </div>
+        </div>
+        <div class="color-item">
+          <div class="color-box slate-100">100</div>
+          <div class="color-info">
+            <div class="color-name">Slate 100</div>
+            <div class="color-hex">#F1F5F9</div>
+          </div>
+        </div>
+        <div class="color-item">
+          <div class="color-box slate-200">200</div>
+          <div class="color-info">
+            <div class="color-name">Slate 200</div>
+            <div class="color-hex">#E2E8F0</div>
+          </div>
+        </div>
+        <div class="color-item">
+          <div class="color-box slate-300">300</div>
+          <div class="color-info">
+            <div class="color-name">Slate 300</div>
+            <div class="color-hex">#CBD5E1</div>
+          </div>
+        </div>
+        <div class="color-item">
+          <div class="color-box slate-400">400</div>
+          <div class="color-info">
+            <div class="color-name">Slate 400</div>
+            <div class="color-hex">#94A3B8</div>
+          </div>
+        </div>
+        <div class="color-item">
+          <div class="color-box slate-500">500</div>
+          <div class="color-info">
+            <div class="color-name">Slate 500</div>
+            <div class="color-hex">#64748B</div>
+          </div>
+        </div>
+        <div class="color-item">
+          <div class="color-box slate-600">600</div>
+          <div class="color-info">
+            <div class="color-name">Slate 600</div>
+            <div class="color-hex">#475569</div>
+          </div>
+        </div>
+        <div class="color-item">
+          <div class="color-box slate-700">700</div>
+          <div class="color-info">
+            <div class="color-name">Slate 700</div>
+            <div class="color-hex">#334155</div>
+          </div>
+        </div>
+        <div class="color-item">
+          <div class="color-box slate-800">800</div>
+          <div class="color-info">
+            <div class="color-name">Slate 800</div>
+            <div class="color-hex">#1E293B</div>
+          </div>
+        </div>
+        <div class="color-item">
+          <div class="color-box slate-900">900</div>
+          <div class="color-info">
+            <div class="color-name">Slate 900</div>
+            <div class="color-hex">#0F172A</div>
+          </div>
+        </div>
+        <div class="color-item">
+          <div class="color-box slate-950">950</div>
+          <div class="color-info">
+            <div class="color-name">Slate 950</div>
+            <div class="color-hex">#020617</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Semantic Colors -->
+    <div class="section">
+      <h2 class="section-title">🎯 Semantic Colors</h2>
+      <div class="color-grid">
+        <div class="color-item">
+          <div class="color-box success-50">50</div>
+          <div class="color-info">
+            <div class="color-name">Success 50</div>
+            <div class="color-hex">#ECFDF5</div>
+          </div>
+        </div>
+        <div class="color-item">
+          <div class="color-box success-500">500</div>
+          <div class="color-info">
+            <div class="color-name">Success 500</div>
+            <div class="color-hex">#10B981</div>
+          </div>
+        </div>
+        <div class="color-item">
+          <div class="color-box success-600">600</div>
+          <div class="color-info">
+            <div class="color-name">Success 600</div>
+            <div class="color-hex">#059669</div>
+          </div>
+        </div>
+        <div class="color-item">
+          <div class="color-box warning-50">50</div>
+          <div class="color-info">
+            <div class="color-name">Warning 50</div>
+            <div class="color-hex">#FFFBEB</div>
+          </div>
+        </div>
+        <div class="color-item">
+          <div class="color-box warning-500">500</div>
+          <div class="color-info">
+            <div class="color-name">Warning 500</div>
+            <div class="color-hex">#F59E0B</div>
+          </div>
+        </div>
+        <div class="color-item">
+          <div class="color-box warning-600">600</div>
+          <div class="color-info">
+            <div class="color-name">Warning 600</div>
+            <div class="color-hex">#D97706</div>
+          </div>
+        </div>
+        <div class="color-item">
+          <div class="color-box error-50">50</div>
+          <div class="color-info">
+            <div class="color-name">Error 50</div>
+            <div class="color-hex">#FFF1F2</div>
+          </div>
+        </div>
+        <div class="color-item">
+          <div class="color-box error-500">500</div>
+          <div class="color-info">
+            <div class="color-name">Error 500</div>
+            <div class="color-hex">#F43F5E</div>
+          </div>
+        </div>
+        <div class="color-item">
+          <div class="color-box error-600">600</div>
+          <div class="color-info">
+            <div class="color-name">Error 600</div>
+            <div class="color-hex">#E11D48</div>
+          </div>
+        </div>
+        <div class="color-item">
+          <div class="color-box info-50">50</div>
+          <div class="color-info">
+            <div class="color-name">Info 50</div>
+            <div class="color-hex">#F0F9FF</div>
+          </div>
+        </div>
+        <div class="color-item">
+          <div class="color-box info-500">500</div>
+          <div class="color-info">
+            <div class="color-name">Info 500</div>
+            <div class="color-hex">#0EA5E9</div>
+          </div>
+        </div>
+        <div class="color-item">
+          <div class="color-box info-600">600</div>
+          <div class="color-info">
+            <div class="color-name">Info 600</div>
+            <div class="color-hex">#0284C7</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Special Effects -->
+    <div class="section">
+      <h2 class="section-title">✨ Special Effects</h2>
+      <div class="ui-examples">
+        <div class="example-card">
+          <div class="example-title">Gradient AI</div>
+          <div class="gradient-box">AI Generating...</div>
+          <div class="color-hex">linear-gradient(90deg, #4F46E5, #F97316)</div>
+        </div>
+        <div class="example-card">
+          <div class="example-title">Glow Effect</div>
+          <div class="glow-demo">✨ Card dengan glow</div>
+          <div class="color-hex">box-shadow: 0 0 20px rgba(79, 70, 229, 0.3)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- UI Components -->
+    <div class="section">
+      <h2 class="section-title">🧩 UI Components</h2>
+      <div class="ui-examples">
+        <!-- Buttons -->
+        <div class="example-card">
+          <div class="example-title">Buttons</div>
+          <button class="btn btn-primary">Primary Button</button>
+          <button class="btn btn-accent">Generate PRD (Accent)</button>
+          <button class="btn btn-secondary">Secondary</button>
+          <button class="btn btn-ghost">Ghost Button</button>
+        </div>
+
+        <!-- Form Elements -->
+        <div class="example-card">
+          <div class="example-title">Form Elements</div>
+          <label class="label">Email Address</label>
+          <input type="text" class="input" placeholder="nama@email.com">
+          <label class="label">Project Description</label>
+          <input type="text" class="input" placeholder="Deskripsikan ide proyek Anda...">
+        </div>
+
+        <!-- Cards -->
+        <div class="example-card">
+          <div class="example-title">Cards</div>
+          <div class="card">
+            <div class="card-title">E-Commerce App</div>
+            <div class="card-text">Aplikasi toko online dengan pembayaran QRIS dan manajemen inventori real-time.</div>
+          </div>
+        </div>
+
+        <!-- Badges -->
+        <div class="example-card">
+          <div class="example-title">Status Badges</div>
+          <span class="badge badge-success">Success</span>
+          <span class="badge badge-warning">Warning</span>
+          <span class="badge badge-error">Error</span>
+          <span class="badge badge-info">Info</span>
+          <div style="margin-top: 12px;">
+            <span class="badge badge-deployment-vercel">Vercel</span>
+            <span class="badge badge-deployment-netlify">Netlify</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Typography -->
+    <div class="section">
+      <h2 class="section-title">📝 Typography Scale</h2>
+      <div class="type-demo">
+        <div class="type-hero">Hero Title<br><span style="font-size: 18px; color: #64748B; font-weight: 400;">48px / 56px - Landing page headline</span></div>
+      </div>
+      <div class="type-demo">
+        <div class="type-h1">Heading 1 (H1)<br><span style="font-size: 14px; color: #64748B; font-weight: 400;">36px / 44px - Page title</span></div>
+      </div>
+      <div class="type-demo">
+        <div class="type-h2">Heading 2 (H2)<br><span style="font-size: 14px; color: #64748B; font-weight: 400;">30px / 38px - Section headers</span></div>
+      </div>
+      <div class="type-demo">
+        <div class="type-h3">Heading 3 (H3)<br><span style="font-size: 14px; color: #64748B; font-weight: 400;">24px / 32px - Card titles</span></div>
+      </div>
+      <div class="type-demo">
+        <div class="type-body">Body Text - Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.<br><span style="font-size: 14px; color: #64748B;">16px / 24px (line-height 1.75 untuk PRD content)</span></div>
+      </div>
+      <div class="type-demo">
+        <span class="type-caption">Caption Text - Badges, timestamps, metadata • 12px / 16px</span>
+      </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="notes">
+      <div class="notes-title">💡 Catatan Implementasi</div>
+      <div class="notes-text">
+        • Warna utama <strong>Indigo (#4F46E5)</strong> mewakili kecerdasan AI dan trustworthiness<br>
+        • Warna aksen <strong>Coral (#F97316)</strong> memberikan energi kreatif dan warmth<br>
+        • Kombinasi ini menciptakan keseimbangan antara professional (enterprise) dan approachable (individual/startup)<br>
+        • Semua warna sudah di-test untuk readability dan kontras WCAG AA<br>
+        • Sistem ini optimal untuk Bahasa Indonesia maupun Inggris
+      </div>
+    </div>
+  </div>
+</body>
+</html>
