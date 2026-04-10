@@ -7,7 +7,20 @@ if (!connectionString) {
   throw new Error("DATABASE_URL environment variable is not set");
 }
 
+// Determine the base URL for the auth server
+// In production: use BETTER_AUTH_URL env var (set to production URL)
+// In development: defaults to localhost:3000
+const baseURL = process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL;
+
 export const auth = betterAuth({
+  baseURL,
+
+  // Trust both local and production origins
+  trustedOrigins: [
+    "http://localhost:3000",
+    "https://prd-generator-xi-one.vercel.app",
+  ],
+
   database: new Pool({
     connectionString,
     ssl: {
