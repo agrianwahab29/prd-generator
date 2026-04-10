@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { streamText } from "ai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { auth } from "@/lib/auth";
-import { db } from "@/db";
+import { getDb } from "@/db";
 import { userSettings } from "@/db/schema";
 import { decrypt } from "@/lib/crypto";
 import { eq } from "drizzle-orm";
@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
 
     if (session?.user) {
       try {
-        const settings = await db
+        const settings = await getDb()
           .select()
           .from(userSettings)
           .where(eq(userSettings.userId, session.user.id))

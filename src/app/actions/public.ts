@@ -1,11 +1,11 @@
 "use server";
 
-import { db } from "@/db";
+import { getDb } from "@/db";
 import { projects } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function getPublicProject(projectId: string) {
-  const project = await db
+  const project = await getDb()
     .select({
       id: projects.id,
       title: projects.title,

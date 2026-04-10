@@ -2,7 +2,7 @@
 
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { db } from "@/db";
+import { getDb } from "@/db";
 import { userSettings } from "@/db/schema";
 import { encrypt } from "@/lib/crypto";
 import { eq } from "drizzle-orm";
@@ -30,7 +30,7 @@ export async function updateApiKey(formData: FormData) {
 
   const encrypted = encrypt(apiKey.trim());
 
-  await db
+  await getDb()
     .insert(userSettings)
     .values({
       userId: session.user.id,
@@ -60,7 +60,7 @@ export async function getUserSettings() {
     return null;
   }
 
-  const settings = await db
+  const settings = await getDb()
     .select({
       apiProvider: userSettings.apiProvider,
       hasApiKey: userSettings.apiKeyEncrypted,

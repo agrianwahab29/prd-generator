@@ -4,7 +4,7 @@ import { renderToStream, Document, Page, Text, View, StyleSheet } from "@react-p
 import React from "react";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { db } from "@/db";
+import { getDb } from "@/db";
 import { projects } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 
@@ -82,7 +82,7 @@ export async function generatePDF(projectId: string): Promise<Buffer> {
     throw new Error("Unauthorized");
   }
 
-  const project = await db
+  const project = await getDb()
     .select()
     .from(projects)
     .where(and(eq(projects.id, projectId), eq(projects.userId, session.user.id)))

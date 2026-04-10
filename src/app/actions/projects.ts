@@ -2,7 +2,7 @@
 
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { db } from "@/db";
+import { getDb } from "@/db";
 import { projects } from "@/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { revalidatePath, unstable_cache } from "next/cache";
@@ -21,7 +21,7 @@ export async function saveProject(data: {
     throw new Error("Unauthorized");
   }
 
-  const [project] = await db
+  const [project] = await getDb()
     .insert(projects)
     .values({
       userId: session.user.id,
@@ -47,7 +47,7 @@ export async function deleteProject(projectId: string) {
   }
 
   // Ensure user owns this project
-  const existing = await db
+  const existing = await getDb()
     .select()
     .from(projects)
     .where(
@@ -59,7 +59,7 @@ export async function deleteProject(projectId: string) {
     throw new Error("Project not found");
   }
 
-  await db.delete(projects).where(eq(projects.id, projectId));
+  await getDb().delete(projects).where(eq(projects.id, projectId));
 
   revalidatePath("/dashboard");
 
@@ -71,7 +71,7 @@ export async function deleteProject(projectId: string) {
 export const getProjectsCached = async (userId: string) => {
   const cached = unstable_cache(
     async (uid: string) => {
-      return db
+      return getDb()
         .select()
         .from(projects)
         .where(eq(projects.userId, uid))
@@ -109,7 +109,7 @@ export async function getProject(projectId: string) {
     throw new Error("Unauthorized");
   }
 
-  const project = await db
+  const project = await getDb()
     .select()
     .from(projects)
     .where(
