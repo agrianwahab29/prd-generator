@@ -27,9 +27,14 @@ export const auth = betterAuth({
     user: {
       create: {
         before: async (user) => {
+          // Ensure name is set - fallback to email prefix or 'User' if not provided
+          // This handles OAuth providers that may not always provide a name
+          const name = user.name || (user.email ? user.email.split('@')[0] : 'User');
+          
           return {
             data: {
               ...user,
+              name,
               emailVerified: user.emailVerified ?? false,
             },
           };
