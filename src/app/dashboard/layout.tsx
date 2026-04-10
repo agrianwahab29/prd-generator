@@ -5,7 +5,6 @@ import {
   FileText,
   LayoutDashboard,
   Settings,
-  Plus,
   LogOut,
   Sparkles,
 } from "lucide-react";
@@ -125,15 +124,9 @@ export default async function DashboardLayout({
         {/* Top Header */}
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-[#E2E8F0] bg-white/80 backdrop-blur-md px-8">
           <h1 className="text-xl font-semibold text-[#0F172A]">Dashboard</h1>
-          <Button
-            className="bg-[#F97316] hover:bg-[#EA580C] text-white gap-2"
-            asChild
-          >
-            <Link href="/dashboard/generate">
-              <Plus className="h-4 w-4" />
-              Buat PRD Baru
-            </Link>
-          </Button>
+          <div className="text-sm text-[#64748B]">
+            Selamat datang, {userName.split(" ")[0]}!
+          </div>
         </header>
 
         {/* Page Content */}

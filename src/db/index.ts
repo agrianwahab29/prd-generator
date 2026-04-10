@@ -10,7 +10,7 @@ export function getDb() {
     const connectionString = process.env.DATABASE_URL;
     if (!connectionString) {
       throw new Error(
-        "DATABASE_URL environment variable is not set. Please configure it in .env.local"
+        "DATABASE_URL environment variable is not set. Please configure it in your environment"
       );
     }
     
@@ -24,6 +24,3 @@ export function getDb() {
   }
   return _db;
 }
-
-// Direct export - getDb() must be called to initialize
-export const db = getDb();
