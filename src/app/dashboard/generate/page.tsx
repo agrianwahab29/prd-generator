@@ -308,7 +308,7 @@ export default function GeneratePage() {
   if (!mounted) return null;
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 -mx-4 -my-8 px-4 py-8 lg:-mx-8 lg:-my-8 lg:px-8 lg:py-8">
+    <div className="min-h-[calc(100vh-4rem)]">
       {/* Background Effects */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-amber-500/5 rounded-full blur-[120px]" />
