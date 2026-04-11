@@ -22,7 +22,6 @@ import {
   Download,
   Trash2,
   Clock,
-  Edit,
   FileText,
   Cloud,
   Globe,
@@ -189,8 +188,8 @@ export default function ProjectDetailPage() {
     try {
       await navigator.clipboard.writeText(project.content);
       toast.success("PRD berhasil disalin!");
-    } catch (err) {
-      toast.error("Gagal menyalin");
+  } catch {
+    toast.error("Gagal menyalin");
     }
   };
 
@@ -217,7 +216,7 @@ export default function ProjectDetailPage() {
       const publicUrl = `${window.location.origin}/p/${projectId}`;
       await navigator.clipboard.writeText(publicUrl);
       toast.success("Link publik berhasil disalin!");
-    } catch (err) {
+    } catch {
       toast.error("Gagal menyalin link");
     }
   };
@@ -254,8 +253,8 @@ export default function ProjectDetailPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
+      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
           <Button
             variant="ghost"
             className="mb-4 -ml-4 text-[#64748B] hover:text-[#0F172A]"
@@ -263,21 +262,22 @@ export default function ProjectDetailPage() {
           >
             <Link href="/dashboard">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Kembali ke Dashboard
+              <span className="hidden sm:inline">Kembali ke Dashboard</span>
+              <span className="sm:hidden">Kembali</span>
             </Link>
           </Button>
-          <div className="flex items-center gap-3 mb-2">
-            <h2 className="text-2xl font-bold text-[#0F172A]">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
+            <h2 className="text-xl sm:text-2xl font-bold text-[#0F172A] truncate">
               {project.title}
             </h2>
             <Badge
-              className={`${deploymentColors[project.deployment]} font-medium`}
+              className={`${deploymentColors[project.deployment]} font-medium whitespace-nowrap`}
             >
               <span className="mr-1">{deploymentIcons[project.deployment]}</span>
               {deploymentLabels[project.deployment]}
             </Badge>
           </div>
-          <div className="flex items-center gap-4 text-sm text-[#64748B]">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm text-[#64748B]">
             <span className="flex items-center gap-1">
               <FileText className="h-4 w-4" />
               PRD #{projectId}
@@ -288,46 +288,46 @@ export default function ProjectDetailPage() {
             </span>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
           <Button
             variant="outline"
-            className="border-[#E2E8F0] text-[#334155]"
+            className="border-[#E2E8F0] text-[#334155] flex-1 sm:flex-none"
             onClick={handleCopy}
           >
-            <Copy className="h-4 w-4 mr-2" />
-            Copy
+            <Copy className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Copy</span>
           </Button>
           <Button
             variant="outline"
-            className="border-[#E2E8F0] text-[#334155]"
+            className="border-[#E2E8F0] text-[#334155] flex-1 sm:flex-none"
             onClick={handleShare}
           >
-            <Share2 className="h-4 w-4 mr-2" />
-            Share
+            <Share2 className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Share</span>
           </Button>
           <Button
             variant="outline"
-            className="border-[#E2E8F0] text-[#334155]"
+            className="border-[#E2E8F0] text-[#334155] flex-1 sm:flex-none"
             onClick={handleDownload}
           >
-            <Download className="h-4 w-4 mr-2" />
-            Download MD
+            <Download className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">MD</span>
           </Button>
           <Button
             variant="outline"
-            className="border-[#E2E8F0] text-[#334155]"
+            className="border-[#E2E8F0] text-[#334155] flex-1 sm:flex-none"
             onClick={handleDownloadPDF}
           >
-            <FileDown className="h-4 w-4 mr-2" />
-            Download PDF
+            <FileDown className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">PDF</span>
           </Button>
           <Button
             variant="outline"
-            className="border-[#E2E8F0] text-[#F43F5E] hover:bg-[#FFF1F2]"
+            className="border-[#E2E8F0] text-[#F43F5E] hover:bg-[#FFF1F2] flex-1 sm:flex-none"
             onClick={handleDelete}
           >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Hapus
+            <Trash2 className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Hapus</span>
           </Button>
         </div>
       </div>

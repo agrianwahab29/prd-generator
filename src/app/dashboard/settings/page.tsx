@@ -34,7 +34,6 @@ import {
   Eye,
   EyeOff,
   Save,
-  AlertTriangle,
   Loader2,
   Check,
   User,
@@ -123,7 +122,7 @@ export default function SettingsPage() {
       </div>
 
       <Tabs defaultValue="api" className="w-full">
-        <TabsList className="bg-white border border-[#E2E8F0] mb-6">
+        <TabsList className="bg-white border border-[#E2E8F0] mb-6 overflow-x-auto scrollbar-thin">
           <TabsTrigger value="api" className="data-[state=active]:bg-[#EEF2FF] data-[state=active]:text-[#4F46E5]">
             <Key className="h-4 w-4 mr-2" />
             API Key

@@ -157,7 +157,7 @@ export default function GeneratePage() {
       setCopied(true);
       toast.success("PRD berhasil disalin!");
       setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
+    } catch {
       toast.error("Gagal menyalin");
     }
   };
@@ -188,7 +188,7 @@ export default function GeneratePage() {
         generatedPrd: content,
       });
       toast.success("PRD berhasil disimpan ke dashboard!");
-    } catch (err) {
+    } catch {
       toast.error("Gagal menyimpan PRD. Pastikan Anda sudah login.");
     }
   };
@@ -204,6 +204,7 @@ export default function GeneratePage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[45%_55%]">
+        {/* Mobile-first: stacks vertically, lg: side-by-side */}
         {/* Input Form */}
         <Card className="border-[#E2E8F0]">
           <CardHeader>
@@ -381,7 +382,7 @@ export default function GeneratePage() {
                     <Sparkles className="h-8 w-8 text-[#4F46E5]" />
                   </div>
                   <p className="text-[#475569]">
-                    Masukkan deskripsi proyek dan klik "Generate PRD"
+                    Masukkan deskripsi proyek dan klik &quot;Generate PRD&quot;
                   </p>
                 </div>
               )}

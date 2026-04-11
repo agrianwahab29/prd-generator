@@ -58,15 +58,15 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-[#0F172A]">Proyek Saya</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-[#0F172A]">Proyek Saya</h2>
           <p className="text-[#475569]">
             Kelola dan lihat semua PRD yang telah Anda buat
           </p>
         </div>
         <Button
-          className="bg-[#F97316] hover:bg-[#EA580C] text-white gap-2"
+          className="bg-[#F97316] hover:bg-[#EA580C] text-white gap-2 w-full sm:w-auto"
           asChild
         >
           <Link href="/dashboard/generate">
@@ -79,11 +79,10 @@ export default async function DashboardPage() {
       {/* Projects Grid */}
       {projects && projects.length > 0 ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {projects.map((project, index) => (
+          {projects.map((project) => (
             <ProjectCard
               key={project.id}
               project={project}
-              index={index}
             />
           ))}
         </div>
@@ -96,10 +95,8 @@ export default async function DashboardPage() {
 
 function ProjectCard({
   project,
-  index,
 }: {
   project: NonNullable<Awaited<ReturnType<typeof getProjects>>[0]>;
-  index: number;
 }) {
   return (
     <Card className="group border-[#E2E8F0] hover:shadow-lg transition-all duration-200 hover:-translate-y-1 overflow-hidden animate-fade-in">
