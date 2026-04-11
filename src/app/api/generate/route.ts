@@ -114,13 +114,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Determine API key: user's custom key or default env key
-    let apiKey = process.env.OPENROUTER_API_KEY;
+    // Determine API key and provider: user's custom key or default env key
+    let apiKey: string | undefined;
+    let provider = "gemini"; // Default provider
 
     if (session?.user) {
       try {
         const settings = await getDb()
-          .select()
+          .select({
+            apiKeyEncrypted: userSettings.apiKeyEncrypted,
+            apiProvider: userSettings.apiProvider,
+            apiModel: userSettings.apiModel,
+          })
           .from(userSettings)
           .where(eq(userSettings.userId, session.user.id))
           .limit(1);
@@ -128,14 +133,25 @@ export async function POST(req: NextRequest) {
         if (settings.length > 0 && settings[0].apiKeyEncrypted) {
           try {
             apiKey = decrypt(settings[0].apiKeyEncrypted);
+            provider = settings[0].apiProvider || "gemini";
           } catch {
             // If decryption fails, fall back to default key
             console.warn("Failed to decrypt user API key, using default");
           }
+        } else if (settings.length > 0) {
+          // No custom key, use default based on provider setting
+          provider = settings[0].apiProvider || "gemini";
         }
       } catch (dbError) {
         console.warn("Failed to fetch user settings:", dbError);
       }
+    }
+
+    // Fall back to environment variables based on provider
+    if (!apiKey) {
+      apiKey = provider === "gemini"
+        ? process.env.GEMINI_API_KEY
+        : process.env.OPENROUTER_API_KEY;
     }
 
     if (!apiKey) {
@@ -148,16 +164,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Create OpenRouter provider
-    const openrouter = createOpenAICompatible({
-      name: "openrouter",
-      baseURL: "https://openrouter.ai/api/v1",
-      apiKey: apiKey,
-      headers: {
-        "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-        "X-Title": "AI PRD Generator",
-      },
-    });
+    // Create provider based on selected provider
+    const model = "minimax/minimax-m2.5:free";
+
+    let providerConfig;
+    if (provider === "gemini") {
+      // Use Google Gemini API
+      providerConfig = createOpenAICompatible({
+        name: "gemini",
+        baseURL: "https://generativelanguage.googleapis.com/v1beta/openai",
+        apiKey: apiKey,
+      });
+    } else {
+      // Use OpenRouter
+      providerConfig = createOpenAICompatible({
+        name: "openrouter",
+        baseURL: "https://openrouter.ai/api/v1",
+        apiKey: apiKey,
+        headers: {
+          "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+          "X-Title": "AI PRD Generator",
+        },
+      });
+    }
 
     const deploymentLabels: Record<string, string> = {
       vercel: "Vercel",
@@ -170,7 +199,7 @@ export async function POST(req: NextRequest) {
 
     // Stream the response
     const result = streamText({
-      model: openrouter.chatModel("minimax/minimax-m2.5:free"),
+      model: providerConfig.chatModel(model),
       system: PRD_SYSTEM_PROMPT,
       prompt: fullPrompt,
     });

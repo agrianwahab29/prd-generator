@@ -180,7 +180,7 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
   } = useForm<ApiKeyForm>({
     resolver: zodResolver(apiKeySchema),
     defaultValues: {
-      provider: initialSettings?.apiProvider || "openrouter",
+      provider: initialSettings?.apiProvider || "gemini",
       model: initialSettings?.apiModel || "minimax/minimax-m2.5:free",
       apiKey: "",
     },
@@ -211,22 +211,42 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
     }
   };
 
+  const providerInfo = provider === "gemini"
+    ? {
+        name: "Google Gemini",
+        description: "Gunakan Google Gemini API untuk menghasilkan PRD. Anda bisa menggunakan API key bawaan aplikasi atau API key Gemini Anda sendiri.",
+        customKeyLabel: "Gunakan API key Gemini sendiri (opsional)",
+        customKeyPlaceholder: "AIzaSy...",
+        customKeyHint: "Dapatkan API key di",
+        customKeyUrl: "https://aistudio.google.com/app/apikey",
+        customKeyUrlText: "aistudio.google.com/app/apikey",
+      }
+    : {
+        name: "OpenRouter",
+        description: "Gunakan OpenRouter untuk mengakses berbagai model AI. Anda bisa menggunakan API key bawaan aplikasi atau API key OpenRouter Anda sendiri.",
+        customKeyLabel: "Gunakan API key OpenRouter sendiri (opsional)",
+        customKeyPlaceholder: "sk-or-v1-...",
+        customKeyHint: "Dapatkan API key di",
+        customKeyUrl: "https://openrouter.ai/keys",
+        customKeyUrlText: "openrouter.ai/keys",
+      };
+
   return (
     <Card className="border-[#E2E8F0]">
       <CardHeader>
         <CardTitle className="text-lg font-semibold text-[#0F172A] flex items-center gap-2">
           <Key className="h-5 w-5 text-[#4F46E5]" />
-          Konfigurasi API OpenRouter
+          Konfigurasi AI Provider
         </CardTitle>
         <CardDescription>
-          Atur API key OpenRouter untuk mengakses layanan AI. Anda bisa menggunakan API key bawaan aplikasi atau menggunakan API key sendiri.
+          Atur provider AI dan API key untuk menghasilkan PRD. Anda bisa menggunakan API key bawaan aplikasi atau menggunakan API key sendiri.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Alert className="mb-6 bg-[#EEF2FF] border-[#C7D2FE] text-[#3730A3]">
           <Info className="h-4 w-4" />
           <AlertDescription>
-            Aplikasi ini menggunakan OpenRouter untuk menghasilkan PRD. Anda dapat menggunakan API key bawaan (gratis) atau memasukkan API key OpenRouter Anda sendiri.
+            Aplikasi ini menggunakan AI untuk menghasilkan PRD. Pilih provider yang diinginkan dan gunakan API key bawaan (gratis) atau masukkan API key Anda sendiri.
           </AlertDescription>
         </Alert>
 
@@ -243,7 +263,8 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
                 <SelectValue placeholder="Pilih provider" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="openrouter">OpenRouter (Recommended)</SelectItem>
+                <SelectItem value="gemini">Google Gemini (Recommended)</SelectItem>
+                <SelectItem value="openrouter">OpenRouter</SelectItem>
               </SelectContent>
             </Select>
             {errors.provider && (
@@ -264,10 +285,6 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="minimax/minimax-m2.5:free">MiniMax M2.5 (Free)</SelectItem>
-                <SelectItem value="openai/gpt-3.5-turbo">GPT-3.5 Turbo</SelectItem>
-                <SelectItem value="anthropic/claude-3-haiku">Claude 3 Haiku</SelectItem>
-                <SelectItem value="meta-llama/llama-3.1-8b-instruct">Llama 3.1 8B</SelectItem>
-                <SelectItem value="google/gemini-flash-1.5">Gemini Flash 1.5</SelectItem>
               </SelectContent>
             </Select>
             {errors.model && (
@@ -283,20 +300,20 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
                 onCheckedChange={(checked) => setUseCustomKey(checked as boolean)}
               />
               <Label htmlFor="useCustomKey" className="text-[#334155] cursor-pointer">
-                Gunakan API key OpenRouter sendiri (opsional)
+                {providerInfo.customKeyLabel}
               </Label>
             </div>
 
             {useCustomKey && (
               <div className="space-y-2 pl-6">
                 <Label htmlFor="apiKey" className="text-[#334155]">
-                  API Key OpenRouter
+                  API Key {provider === "gemini" ? "Gemini" : "OpenRouter"}
                 </Label>
                 <div className="relative">
                   <Input
                     id="apiKey"
                     type={showApiKey ? "text" : "password"}
-                    placeholder="sk-or-v1-..."
+                    placeholder={providerInfo.customKeyPlaceholder}
                     className="pr-10 border-[#E2E8F0] focus:border-[#4F46E5] focus:ring-[#4F46E5]"
                     {...register("apiKey")}
                   />
@@ -315,14 +332,14 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
                   </Button>
                 </div>
                 <p className="text-sm text-[#64748B]">
-                  Dapatkan API key di{' '}
+                  {providerInfo.customKeyHint}{' '}
                   <a
-                    href="https://openrouter.ai/keys"
+                    href={providerInfo.customKeyUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-[#4F46E5] hover:underline"
                   >
-                    openrouter.ai/keys
+                    {providerInfo.customKeyUrlText}
                   </a>
                 </p>
               </div>

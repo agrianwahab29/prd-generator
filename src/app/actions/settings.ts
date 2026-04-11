@@ -8,10 +8,11 @@ import { encrypt, decrypt } from "@/lib/crypto";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
-// Get default API key and model from environment variables
+// Get default API keys from environment variables
 // These should be set in Vercel dashboard or .env.local
 const DEFAULT_OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || "";
-const DEFAULT_OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "minimax/minimax-m2.5:free";
+const DEFAULT_GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
+const DEFAULT_MODEL = process.env.DEFAULT_MODEL || "minimax/minimax-m2.5:free";
 
 export async function updateApiKey(formData: FormData) {
   const session = await auth.api.getSession({
@@ -30,15 +31,16 @@ export async function updateApiKey(formData: FormData) {
     throw new Error("Provider wajib dipilih");
   }
 
-  // Use provided API key or fall back to default from env
+  // Use provided API key or fall back to default from env based on provider
   let finalApiKey = apiKey?.trim();
   if (!finalApiKey) {
-    if (!DEFAULT_OPENROUTER_API_KEY) {
-      throw new Error("API Key tidak tersedia. Silakan masukkan API key OpenRouter Anda sendiri atau hubungi administrator.");
+    const defaultKey = provider === "gemini" ? DEFAULT_GEMINI_API_KEY : DEFAULT_OPENROUTER_API_KEY;
+    if (!defaultKey) {
+      throw new Error(`API Key ${provider === "gemini" ? "Gemini" : "OpenRouter"} tidak tersedia. Silakan masukkan API key Anda sendiri atau hubungi administrator.`);
     }
-    finalApiKey = DEFAULT_OPENROUTER_API_KEY;
+    finalApiKey = defaultKey;
   }
-  const finalModel = model?.trim() || DEFAULT_OPENROUTER_MODEL;
+  const finalModel = model?.trim() || DEFAULT_MODEL;
 
   const encrypted = encrypt(finalApiKey);
 
@@ -90,8 +92,8 @@ export async function getUserSettings() {
 
   if (settings.length === 0) {
     return {
-      apiProvider: "openrouter",
-      apiModel: DEFAULT_OPENROUTER_MODEL,
+      apiProvider: "gemini",
+      apiModel: DEFAULT_MODEL,
       hasCustomApiKey: false,
       language: "id",
       notifyPrdGenerated: true,
@@ -101,14 +103,15 @@ export async function getUserSettings() {
   }
 
   const s = settings[0];
-  // Check if user is using the default key (compare with encrypted env var)
-  const isUsingDefaultKey = DEFAULT_OPENROUTER_API_KEY 
-    ? s.apiKeyEncrypted === encrypt(DEFAULT_OPENROUTER_API_KEY)
+  // Check if user is using the default key (compare with encrypted env var based on provider)
+  const defaultKey = s.apiProvider === "gemini" ? DEFAULT_GEMINI_API_KEY : DEFAULT_OPENROUTER_API_KEY;
+  const isUsingDefaultKey = defaultKey 
+    ? s.apiKeyEncrypted === encrypt(defaultKey)
     : false;
 
   return {
-    apiProvider: s.apiProvider || "openrouter",
-    apiModel: s.apiModel || DEFAULT_OPENROUTER_MODEL,
+    apiProvider: s.apiProvider || "gemini",
+    apiModel: s.apiModel || DEFAULT_MODEL,
     hasCustomApiKey: !!s.apiKeyEncrypted && !isUsingDefaultKey,
     language: s.language || "id",
     notifyPrdGenerated: s.notifyPrdGenerated === "true",
@@ -204,25 +207,29 @@ export async function updateNotificationPreferences(formData: FormData) {
 }
 
 // Helper function to get decrypted API key for use in API routes
-export async function getDecryptedApiKey(userId: string): Promise<{ key: string; model: string } | null> {
+export async function getDecryptedApiKey(userId: string): Promise<{ key: string; model: string; provider: string } | null> {
   const settings = await getDb()
     .select({
       apiKeyEncrypted: userSettings.apiKeyEncrypted,
       apiModel: userSettings.apiModel,
+      apiProvider: userSettings.apiProvider,
     })
     .from(userSettings)
     .where(eq(userSettings.userId, userId))
     .limit(1);
 
   if (settings.length === 0 || !settings[0].apiKeyEncrypted) {
-    // Return default API key from environment variable
-    if (!DEFAULT_OPENROUTER_API_KEY) {
-      console.error("OPENROUTER_API_KEY environment variable is not set");
+    // Return default API key from environment variable based on provider
+    const provider = settings.length > 0 ? (settings[0].apiProvider || "gemini") : "gemini";
+    const defaultKey = provider === "gemini" ? DEFAULT_GEMINI_API_KEY : DEFAULT_OPENROUTER_API_KEY;
+    if (!defaultKey) {
+      console.error(`${provider === "gemini" ? "GEMINI_API_KEY" : "OPENROUTER_API_KEY"} environment variable is not set`);
       return null;
     }
     return {
-      key: DEFAULT_OPENROUTER_API_KEY,
-      model: DEFAULT_OPENROUTER_MODEL,
+      key: defaultKey,
+      model: DEFAULT_MODEL,
+      provider,
     };
   }
 
@@ -230,17 +237,21 @@ export async function getDecryptedApiKey(userId: string): Promise<{ key: string;
     const decrypted = decrypt(settings[0].apiKeyEncrypted);
     return {
       key: decrypted,
-      model: settings[0].apiModel || DEFAULT_OPENROUTER_MODEL,
+      model: settings[0].apiModel || DEFAULT_MODEL,
+      provider: settings[0].apiProvider || "gemini",
     };
   } catch (error) {
     console.error("Failed to decrypt API key:", error);
     // Fall back to default from env
-    if (!DEFAULT_OPENROUTER_API_KEY) {
+    const provider = settings[0].apiProvider || "gemini";
+    const defaultKey = provider === "gemini" ? DEFAULT_GEMINI_API_KEY : DEFAULT_OPENROUTER_API_KEY;
+    if (!defaultKey) {
       return null;
     }
     return {
-      key: DEFAULT_OPENROUTER_API_KEY,
-      model: DEFAULT_OPENROUTER_MODEL,
+      key: defaultKey,
+      model: DEFAULT_MODEL,
+      provider,
     };
   }
 }
