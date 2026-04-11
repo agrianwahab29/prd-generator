@@ -8,9 +8,10 @@ import { encrypt, decrypt } from "@/lib/crypto";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
-// Default API key provided by app owner
-const DEFAULT_OPENROUTER_API_KEY = "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";
-const DEFAULT_OPENROUTER_MODEL = "minimax/minimax-m2.5:free";
+// Get default API key and model from environment variables
+// These should be set in Vercel dashboard or .env.local
+const DEFAULT_OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || "";
+const DEFAULT_OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "minimax/minimax-m2.5:free";
 
 export async function updateApiKey(formData: FormData) {
   const session = await auth.api.getSession({
@@ -29,8 +30,14 @@ export async function updateApiKey(formData: FormData) {
     throw new Error("Provider wajib dipilih");
   }
 
-  // Use provided API key or fall back to default
-  const finalApiKey = apiKey?.trim() || DEFAULT_OPENROUTER_API_KEY;
+  // Use provided API key or fall back to default from env
+  let finalApiKey = apiKey?.trim();
+  if (!finalApiKey) {
+    if (!DEFAULT_OPENROUTER_API_KEY) {
+      throw new Error("API Key tidak tersedia. Silakan masukkan API key OpenRouter Anda sendiri atau hubungi administrator.");
+    }
+    finalApiKey = DEFAULT_OPENROUTER_API_KEY;
+  }
   const finalModel = model?.trim() || DEFAULT_OPENROUTER_MODEL;
 
   const encrypted = encrypt(finalApiKey);
@@ -94,7 +101,10 @@ export async function getUserSettings() {
   }
 
   const s = settings[0];
-  const isUsingDefaultKey = s.apiKeyEncrypted === encrypt(DEFAULT_OPENROUTER_API_KEY);
+  // Check if user is using the default key (compare with encrypted env var)
+  const isUsingDefaultKey = DEFAULT_OPENROUTER_API_KEY 
+    ? s.apiKeyEncrypted === encrypt(DEFAULT_OPENROUTER_API_KEY)
+    : false;
 
   return {
     apiProvider: s.apiProvider || "openrouter",
@@ -205,7 +215,11 @@ export async function getDecryptedApiKey(userId: string): Promise<{ key: string;
     .limit(1);
 
   if (settings.length === 0 || !settings[0].apiKeyEncrypted) {
-    // Return default API key
+    // Return default API key from environment variable
+    if (!DEFAULT_OPENROUTER_API_KEY) {
+      console.error("OPENROUTER_API_KEY environment variable is not set");
+      return null;
+    }
     return {
       key: DEFAULT_OPENROUTER_API_KEY,
       model: DEFAULT_OPENROUTER_MODEL,
@@ -220,7 +234,10 @@ export async function getDecryptedApiKey(userId: string): Promise<{ key: string;
     };
   } catch (error) {
     console.error("Failed to decrypt API key:", error);
-    // Fall back to default
+    // Fall back to default from env
+    if (!DEFAULT_OPENROUTER_API_KEY) {
+      return null;
+    }
     return {
       key: DEFAULT_OPENROUTER_API_KEY,
       model: DEFAULT_OPENROUTER_MODEL,
