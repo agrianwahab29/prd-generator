@@ -23,5 +23,10 @@ export const userSettings = pgTable("user_settings", {
     .references(() => user.id, { onDelete: "cascade" }),
   apiKeyEncrypted: text("api_key_encrypted"),
   apiProvider: text("api_provider").default("openrouter"),
+  apiModel: text("api_model").default("minimax/minimax-m2.5:free"),
+  language: text("language").default("id"),
+  notifyPrdGenerated: text("notify_prd_generated").default("true"),
+  notifyEmailUpdates: text("notify_email_updates").default("true"),
+  notifyMarketing: text("notify_marketing").default("false"),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

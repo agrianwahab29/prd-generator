@@ -15,6 +15,13 @@
       "when": 1775717739596,
       "tag": "0001_majestic_violations",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1775917078937,
+      "tag": "0002_sturdy_daimon_hellstrom",
+      "breakpoints": true
     }
   ]
 }

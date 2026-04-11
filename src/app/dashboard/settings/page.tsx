@@ -24,6 +24,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Settings,
   Key,
@@ -36,24 +37,81 @@ import {
   AlertTriangle,
   Loader2,
   Check,
+  User,
+  Mail,
+  Info,
 } from "lucide-react";
 import { toast } from "sonner";
-import { updateApiKey, getUserSettings } from "@/app/actions/settings";
+import {
+  updateApiKey,
+  getUserSettings,
+  getUserProfile,
+  updateLanguagePreference,
+  updateNotificationPreferences,
+} from "@/app/actions/settings";
 
 const apiKeySchema = z.object({
-  apiKey: z.string().min(1, "API Key wajib diisi"),
+  apiKey: z.string().optional(),
   provider: z.string().min(1, "Pilih provider"),
-});
-
-const profileSchema = z.object({
-  name: z.string().min(2, "Nama minimal 2 karakter"),
-  email: z.string().email("Email tidak valid"),
+  model: z.string().min(1, "Pilih model"),
 });
 
 type ApiKeyForm = z.infer<typeof apiKeySchema>;
-type ProfileForm = z.infer<typeof profileSchema>;
+
+interface UserProfile {
+  name: string;
+  email: string;
+  image: string;
+}
+
+interface UserSettings {
+  apiProvider: string;
+  apiModel: string;
+  hasCustomApiKey: boolean;
+  language: string;
+  notifyPrdGenerated: boolean;
+  notifyEmailUpdates: boolean;
+  notifyMarketing: boolean;
+}
 
 export default function SettingsPage() {
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [settings, setSettings] = useState<UserSettings | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [profileData, settingsData] = await Promise.all([
+          getUserProfile(),
+          getUserSettings(),
+        ]);
+        setProfile(profileData);
+        setSettings(settingsData);
+      } catch (error) {
+        console.error("Failed to load settings:", error);
+        toast.error("Gagal memuat pengaturan");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold text-[#0F172A]">Pengaturan</h2>
+          <p className="text-[#475569]">Kelola preferensi akun dan konfigurasi API</p>
+        </div>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-[#4F46E5]" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -85,28 +143,33 @@ export default function SettingsPage() {
         </TabsList>
 
         <TabsContent value="api" className="space-y-6">
-          <ApiKeySettings />
+          <ApiKeySettings initialSettings={settings} />
         </TabsContent>
 
         <TabsContent value="profile" className="space-y-6">
-          <ProfileSettings />
+          <ProfileSettings profile={profile} />
         </TabsContent>
 
         <TabsContent value="language" className="space-y-6">
-          <LanguageSettings />
+          <LanguageSettings initialLanguage={settings?.language || "id"} />
         </TabsContent>
 
         <TabsContent value="notifications" className="space-y-6">
-          <NotificationSettings />
+          <NotificationSettings
+            initialPrdGenerated={settings?.notifyPrdGenerated ?? true}
+            initialEmailUpdates={settings?.notifyEmailUpdates ?? true}
+            initialMarketing={settings?.notifyMarketing ?? false}
+          />
         </TabsContent>
       </Tabs>
     </div>
   );
 }
 
-function ApiKeySettings() {
+function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | null }) {
   const [showApiKey, setShowApiKey] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [useCustomKey, setUseCustomKey] = useState(initialSettings?.hasCustomApiKey ?? false);
 
   const {
     register,
@@ -116,29 +179,33 @@ function ApiKeySettings() {
     formState: { errors },
   } = useForm<ApiKeyForm>({
     resolver: zodResolver(apiKeySchema),
+    defaultValues: {
+      provider: initialSettings?.apiProvider || "openrouter",
+      model: initialSettings?.apiModel || "minimax/minimax-m2.5:free",
+      apiKey: "",
+    },
   });
 
   const provider = watch("provider");
-
-  useEffect(() => {
-    getUserSettings().then((settings) => {
-      if (settings?.apiProvider) {
-        setValue("provider", settings.apiProvider);
-      }
-    });
-  }, [setValue]);
+  const model = watch("model");
 
   const onSubmit = async (data: ApiKeyForm) => {
     setIsLoading(true);
     try {
       const formData = new FormData();
-      formData.append("apiKey", data.apiKey);
+      // Only send API key if using custom key
+      if (useCustomKey && data.apiKey) {
+        formData.append("apiKey", data.apiKey);
+      } else {
+        formData.append("apiKey", ""); // Use default
+      }
       formData.append("provider", data.provider);
-      
+      formData.append("model", data.model);
+
       await updateApiKey(formData);
-      toast.success("API Key berhasil disimpan!");
+      toast.success("Konfigurasi API berhasil disimpan!");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Gagal menyimpan API Key");
+      toast.error(error instanceof Error ? error.message : "Gagal menyimpan konfigurasi API");
     } finally {
       setIsLoading(false);
     }
@@ -149,17 +216,17 @@ function ApiKeySettings() {
       <CardHeader>
         <CardTitle className="text-lg font-semibold text-[#0F172A] flex items-center gap-2">
           <Key className="h-5 w-5 text-[#4F46E5]" />
-          Konfigurasi API Key
+          Konfigurasi API OpenRouter
         </CardTitle>
         <CardDescription>
-          Atur API key untuk mengakses layanan AI. API key akan dienkripsi dan disimpan dengan aman.
+          Atur API key OpenRouter untuk mengakses layanan AI. Anda bisa menggunakan API key bawaan aplikasi atau menggunakan API key sendiri.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Alert className="mb-6 bg-[#FFFBEB] border-[#FEF3C7] text-[#92400E]">
-          <AlertTriangle className="h-4 w-4" />
+        <Alert className="mb-6 bg-[#EEF2FF] border-[#C7D2FE] text-[#3730A3]">
+          <Info className="h-4 w-4" />
           <AlertDescription>
-            API key Anda akan dienkripsi sebelum disimpan. Jangan bagikan API key dengan siapapun.
+            Aplikasi ini menggunakan OpenRouter untuk menghasilkan PRD. Anda dapat menggunakan API key bawaan (gratis) atau memasukkan API key OpenRouter Anda sendiri.
           </AlertDescription>
         </Alert>
 
@@ -176,10 +243,7 @@ function ApiKeySettings() {
                 <SelectValue placeholder="Pilih provider" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="openai">OpenAI (GPT-4)</SelectItem>
-                <SelectItem value="anthropic">Anthropic (Claude)</SelectItem>
-                <SelectItem value="google">Google (Gemini)</SelectItem>
-                <SelectItem value="groq">Groq (Mixtral/Llama)</SelectItem>
+                <SelectItem value="openrouter">OpenRouter (Recommended)</SelectItem>
               </SelectContent>
             </Select>
             {errors.provider && (
@@ -188,40 +252,87 @@ function ApiKeySettings() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="apiKey" className="text-[#334155]">
-              API Key
+            <Label htmlFor="model" className="text-[#334155]">
+              Model AI
             </Label>
-            <div className="relative">
-              <Input
-                id="apiKey"
-                type={showApiKey ? "text" : "password"}
-                placeholder="sk-..."
-                className="pr-10 border-[#E2E8F0] focus:border-[#4F46E5] focus:ring-[#4F46E5]"
-                {...register("apiKey")}
+            <Select
+              value={model}
+              onValueChange={(value) => setValue("model", value)}
+            >
+              <SelectTrigger className="border-[#E2E8F0] focus:border-[#4F46E5] focus:ring-[#4F46E5]">
+                <SelectValue placeholder="Pilih model" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="minimax/minimax-m2.5:free">MiniMax M2.5 (Free)</SelectItem>
+                <SelectItem value="openai/gpt-3.5-turbo">GPT-3.5 Turbo</SelectItem>
+                <SelectItem value="anthropic/claude-3-haiku">Claude 3 Haiku</SelectItem>
+                <SelectItem value="meta-llama/llama-3.1-8b-instruct">Llama 3.1 8B</SelectItem>
+                <SelectItem value="google/gemini-flash-1.5">Gemini Flash 1.5</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.model && (
+              <p className="text-sm text-[#F43F5E]">{errors.model.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="useCustomKey"
+                checked={useCustomKey}
+                onCheckedChange={(checked) => setUseCustomKey(checked as boolean)}
               />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute right-0 top-0 h-full px-3 text-[#64748B] hover:text-[#0F172A]"
-                onClick={() => setShowApiKey(!showApiKey)}
-              >
-                {showApiKey ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </Button>
+              <Label htmlFor="useCustomKey" className="text-[#334155] cursor-pointer">
+                Gunakan API key OpenRouter sendiri (opsional)
+              </Label>
             </div>
-            {errors.apiKey && (
-              <p className="text-sm text-[#F43F5E]">{errors.apiKey.message}</p>
+
+            {useCustomKey && (
+              <div className="space-y-2 pl-6">
+                <Label htmlFor="apiKey" className="text-[#334155]">
+                  API Key OpenRouter
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="apiKey"
+                    type={showApiKey ? "text" : "password"}
+                    placeholder="sk-or-v1-..."
+                    className="pr-10 border-[#E2E8F0] focus:border-[#4F46E5] focus:ring-[#4F46E5]"
+                    {...register("apiKey")}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-full px-3 text-[#64748B] hover:text-[#0F172A]"
+                    onClick={() => setShowApiKey(!showApiKey)}
+                  >
+                    {showApiKey ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+                <p className="text-sm text-[#64748B]">
+                  Dapatkan API key di{' '}
+                  <a
+                    href="https://openrouter.ai/keys"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#4F46E5] hover:underline"
+                  >
+                    openrouter.ai/keys
+                  </a>
+                </p>
+              </div>
             )}
           </div>
 
           <div className="flex items-center justify-between pt-4 border-t border-[#E2E8F0]">
             <div className="text-sm text-[#64748B]">
               <Shield className="inline h-4 w-4 mr-1" />
-              Terenkripsi dengan AES-256
+              {useCustomKey ? "API key akan dienkripsi dengan AES-256" : "Menggunakan API key bawaan aplikasi"}
             </div>
             <Button
               type="submit"
@@ -236,7 +347,7 @@ function ApiKeySettings() {
               ) : (
                 <>
                   <Save className="h-4 w-4 mr-2" />
-                  Simpan API Key
+                  Simpan Konfigurasi
                 </>
               )}
             </Button>
@@ -247,118 +358,91 @@ function ApiKeySettings() {
   );
 }
 
-function ProfileSettings() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<ProfileForm>({
-    resolver: zodResolver(profileSchema),
-    defaultValues: {
-      name: "John Doe",
-      email: "john@example.com",
-    },
-  });
-
-  const onSubmit = async (data: ProfileForm) => {
-    setIsLoading(true);
-    setIsSuccess(false);
-    try {
-      // TODO: Implement profile update
-      console.log("Profile data:", data);
-      setIsSuccess(true);
-      toast.success("Profil berhasil diperbarui!");
-      setTimeout(() => setIsSuccess(false), 3000);
-    } catch (error) {
-      toast.error("Gagal memperbarui profil");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+function ProfileSettings({ profile }: { profile: UserProfile | null }) {
   return (
     <Card className="border-[#E2E8F0]">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold text-[#0F172A]">
+        <CardTitle className="text-lg font-semibold text-[#0F172A] flex items-center gap-2">
+          <User className="h-5 w-5 text-[#4F46E5]" />
           Informasi Profil
         </CardTitle>
         <CardDescription>
-          Perbarui informasi pribadi Anda
+          Informasi profil Anda dari Google Account
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <div className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="name" className="text-[#334155]">
               Nama Lengkap
             </Label>
-            <Input
-              id="name"
-              type="text"
-              className="border-[#E2E8F0] focus:border-[#4F46E5] focus:ring-[#4F46E5]"
-              {...register("name")}
-            />
-            {errors.name && (
-              <p className="text-sm text-[#F43F5E]">{errors.name.message}</p>
-            )}
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#64748B]" />
+              <Input
+                id="name"
+                type="text"
+                value={profile?.name || ""}
+                readOnly
+                className="pl-10 border-[#E2E8F0] bg-[#F8FAFC] text-[#64748B]"
+              />
+            </div>
+            <p className="text-sm text-[#64748B]">
+              Nama diambil dari Google Account Anda
+            </p>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="email" className="text-[#334155]">
               Email
             </Label>
-            <Input
-              id="email"
-              type="email"
-              className="border-[#E2E8F0] focus:border-[#4F46E5] focus:ring-[#4F46E5]"
-              {...register("email")}
-            />
-            {errors.email && (
-              <p className="text-sm text-[#F43F5E]">{errors.email.message}</p>
-            )}
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#64748B]" />
+              <Input
+                id="email"
+                type="email"
+                value={profile?.email || ""}
+                readOnly
+                className="pl-10 border-[#E2E8F0] bg-[#F8FAFC] text-[#64748B]"
+              />
+            </div>
+            <p className="text-sm text-[#64748B]">
+              Email digunakan untuk login dan notifikasi
+            </p>
           </div>
 
-          <div className="flex items-center justify-between pt-4 border-t border-[#E2E8F0]">
-            <div className="text-sm text-[#64748B]">
-              Email digunakan untuk login dan notifikasi
-            </div>
-            <Button
-              type="submit"
-              className="bg-[#4F46E5] hover:bg-[#4338CA] text-white"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Menyimpan...
-                </>
-              ) : isSuccess ? (
-                <>
-                  <Check className="h-4 w-4 mr-2" />
-                  Tersimpan
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Simpan Perubahan
-                </>
-              )}
-            </Button>
-          </div>
-        </form>
+          <Alert className="bg-[#F0FDF4] border-[#BBF7D0] text-[#166534]">
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              Profil dihubungkan dengan Google Account. Untuk mengubah nama atau email, silakan update di pengaturan Google Account Anda.
+            </AlertDescription>
+          </Alert>
+        </div>
       </CardContent>
     </Card>
   );
 }
 
-function LanguageSettings() {
-  const [language, setLanguage] = useState("id");
+function LanguageSettings({ initialLanguage }: { initialLanguage: string }) {
+  const [language, setLanguage] = useState(initialLanguage);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
-  const handleSave = () => {
-    toast.success("Preferensi bahasa disimpan!");
+  const handleSave = async () => {
+    setIsLoading(true);
+    setIsSuccess(false);
+    try {
+      const formData = new FormData();
+      formData.append("language", language);
+
+      await updateLanguagePreference(formData);
+      setIsSuccess(true);
+      toast.success("Preferensi bahasa berhasil disimpan!");
+      setTimeout(() => setIsSuccess(false), 3000);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Gagal menyimpan preferensi bahasa");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -374,7 +458,14 @@ function LanguageSettings() {
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 rounded-lg border border-[#E2E8F0] bg-white">
+          <div
+            className={`flex items-center justify-between p-4 rounded-lg border cursor-pointer transition-colors ${
+              language === "id"
+                ? "border-[#4F46E5] bg-[#EEF2FF]"
+                : "border-[#E2E8F0] bg-white hover:border-[#4F46E5]/50"
+            }`}
+            onClick={() => setLanguage("id")}
+          >
             <div className="flex items-center gap-3">
               <span className="text-2xl">🇮🇩</span>
               <div>
@@ -382,17 +473,29 @@ function LanguageSettings() {
                 <p className="text-sm text-[#64748B]">Default untuk PRD</p>
               </div>
             </div>
-            <input
-              type="radio"
-              name="language"
-              value="id"
-              checked={language === "id"}
-              onChange={(e) => setLanguage(e.target.value)}
-              className="h-4 w-4 text-[#4F46E5]"
-            />
+            <div
+              className={`h-4 w-4 rounded-full border-2 ${
+                language === "id"
+                  ? "border-[#4F46E5] bg-[#4F46E5]"
+                  : "border-[#CBD5E1]"
+              }`}
+            >
+              {language === "id" && (
+                <div className="h-full w-full flex items-center justify-center">
+                  <div className="h-1.5 w-1.5 rounded-full bg-white" />
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="flex items-center justify-between p-4 rounded-lg border border-[#E2E8F0] bg-white">
+          <div
+            className={`flex items-center justify-between p-4 rounded-lg border cursor-pointer transition-colors ${
+              language === "en"
+                ? "border-[#4F46E5] bg-[#EEF2FF]"
+                : "border-[#E2E8F0] bg-white hover:border-[#4F46E5]/50"
+            }`}
+            onClick={() => setLanguage("en")}
+          >
             <div className="flex items-center gap-3">
               <span className="text-2xl">🇬🇧</span>
               <div>
@@ -400,14 +503,19 @@ function LanguageSettings() {
                 <p className="text-sm text-[#64748B]">English language PRD</p>
               </div>
             </div>
-            <input
-              type="radio"
-              name="language"
-              value="en"
-              checked={language === "en"}
-              onChange={(e) => setLanguage(e.target.value)}
-              className="h-4 w-4 text-[#4F46E5]"
-            />
+            <div
+              className={`h-4 w-4 rounded-full border-2 ${
+                language === "en"
+                  ? "border-[#4F46E5] bg-[#4F46E5]"
+                  : "border-[#CBD5E1]"
+              }`}
+            >
+              {language === "en" && (
+                <div className="h-full w-full flex items-center justify-center">
+                  <div className="h-1.5 w-1.5 rounded-full bg-white" />
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -420,9 +528,24 @@ function LanguageSettings() {
           <Button
             onClick={handleSave}
             className="bg-[#4F46E5] hover:bg-[#4338CA] text-white"
+            disabled={isLoading}
           >
-            <Save className="h-4 w-4 mr-2" />
-            Simpan
+            {isLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Menyimpan...
+              </>
+            ) : isSuccess ? (
+              <>
+                <Check className="h-4 w-4 mr-2" />
+                Tersimpan
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4 mr-2" />
+                Simpan
+              </>
+            )}
           </Button>
         </div>
       </CardContent>
@@ -430,7 +553,41 @@ function LanguageSettings() {
   );
 }
 
-function NotificationSettings() {
+function NotificationSettings({
+  initialPrdGenerated,
+  initialEmailUpdates,
+  initialMarketing,
+}: {
+  initialPrdGenerated: boolean;
+  initialEmailUpdates: boolean;
+  initialMarketing: boolean;
+}) {
+  const [prdGenerated, setPrdGenerated] = useState(initialPrdGenerated);
+  const [emailUpdates, setEmailUpdates] = useState(initialEmailUpdates);
+  const [marketing, setMarketing] = useState(initialMarketing);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  const handleSave = async () => {
+    setIsLoading(true);
+    setIsSuccess(false);
+    try {
+      const formData = new FormData();
+      formData.append("notifyPrdGenerated", prdGenerated.toString());
+      formData.append("notifyEmailUpdates", emailUpdates.toString());
+      formData.append("notifyMarketing", marketing.toString());
+
+      await updateNotificationPreferences(formData);
+      setIsSuccess(true);
+      toast.success("Preferensi notifikasi berhasil disimpan!");
+      setTimeout(() => setIsSuccess(false), 3000);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Gagal menyimpan preferensi notifikasi");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <Card className="border-[#E2E8F0]">
       <CardHeader>
@@ -451,10 +608,10 @@ function NotificationSettings() {
                 Notifikasi saat PRD selesai dihasilkan
               </p>
             </div>
-            <input
-              type="checkbox"
-              defaultChecked
-              className="h-4 w-4 rounded border-[#E2E8F0] text-[#4F46E5]"
+            <Checkbox
+              checked={prdGenerated}
+              onCheckedChange={(checked) => setPrdGenerated(checked as boolean)}
+              className="h-5 w-5"
             />
           </div>
 
@@ -465,10 +622,10 @@ function NotificationSettings() {
                 Update dan pengumuman penting via email
               </p>
             </div>
-            <input
-              type="checkbox"
-              defaultChecked
-              className="h-4 w-4 rounded border-[#E2E8F0] text-[#4F46E5]"
+            <Checkbox
+              checked={emailUpdates}
+              onCheckedChange={(checked) => setEmailUpdates(checked as boolean)}
+              className="h-5 w-5"
             />
           </div>
 
@@ -479,9 +636,10 @@ function NotificationSettings() {
                 Tips, trik, dan penawaran spesial
               </p>
             </div>
-            <input
-              type="checkbox"
-              className="h-4 w-4 rounded border-[#E2E8F0] text-[#4F46E5]"
+            <Checkbox
+              checked={marketing}
+              onCheckedChange={(checked) => setMarketing(checked as boolean)}
+              className="h-5 w-5"
             />
           </div>
         </div>
@@ -493,11 +651,26 @@ function NotificationSettings() {
             Anda dapat mengubah preferensi ini kapan saja
           </div>
           <Button
-            onClick={() => toast.success("Preferensi notifikasi disimpan!")}
+            onClick={handleSave}
             className="bg-[#4F46E5] hover:bg-[#4338CA] text-white"
+            disabled={isLoading}
           >
-            <Save className="h-4 w-4 mr-2" />
-            Simpan
+            {isLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Menyimpan...
+              </>
+            ) : isSuccess ? (
+              <>
+                <Check className="h-4 w-4 mr-2" />
+                Tersimpan
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4 mr-2" />
+                Simpan
+              </>
+            )}
           </Button>
         </div>
       </CardContent>
