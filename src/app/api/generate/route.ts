@@ -65,6 +65,10 @@ Important rules:
 - Always end with: *Dokumen ini digenerate oleh AI PRD Generator berdasarkan input pengguna.*`;
 
 export async function POST(req: NextRequest) {
+  // Declare at function scope so catch block can access it
+  let provider = "gemini";
+  let userSettingsResult: { apiKeyEncrypted: string | null; apiProvider: string | null; apiModel: string | null } | null = null;
+
   try {
     // Get session (optional - allows anonymous generation)
     const session = await auth.api.getSession({
@@ -116,7 +120,6 @@ export async function POST(req: NextRequest) {
 
     // Determine API key and provider: user's custom key or default env key
     let apiKey: string | undefined;
-    let provider = "gemini"; // Default provider
 
     if (session?.user) {
       try {
@@ -130,17 +133,20 @@ export async function POST(req: NextRequest) {
           .where(eq(userSettings.userId, session.user.id))
           .limit(1);
 
-        if (settings.length > 0 && settings[0].apiKeyEncrypted) {
-          try {
-            apiKey = decrypt(settings[0].apiKeyEncrypted);
+        if (settings.length > 0) {
+          userSettingsResult = settings[0];
+          if (settings[0].apiKeyEncrypted) {
+            try {
+              apiKey = decrypt(settings[0].apiKeyEncrypted);
+              provider = settings[0].apiProvider || "gemini";
+            } catch {
+              // If decryption fails, fall back to default key
+              console.warn("Failed to decrypt user API key, using default");
+            }
+          } else {
+            // No custom key, use default based on provider setting
             provider = settings[0].apiProvider || "gemini";
-          } catch {
-            // If decryption fails, fall back to default key
-            console.warn("Failed to decrypt user API key, using default");
           }
-        } else if (settings.length > 0) {
-          // No custom key, use default based on provider setting
-          provider = settings[0].apiProvider || "gemini";
         }
       } catch (dbError) {
         console.warn("Failed to fetch user settings:", dbError);
@@ -165,7 +171,16 @@ export async function POST(req: NextRequest) {
     }
 
     // Create provider based on selected provider
-    const model = "minimax/minimax-m2.5:free";
+    // For Gemini: model is "auto" (Google picks the best available model)
+    // For OpenRouter: use the user's selected free model
+    let model: string;
+    if (provider === "gemini") {
+      model = "auto";
+    } else {
+      // OpenRouter - use the stored model or default to gemma
+      const storedModel = userSettingsResult?.apiModel;
+      model = storedModel && storedModel !== "auto" ? storedModel : "google/gemma-4-31b-it:free";
+    }
 
     let providerConfig;
     if (provider === "gemini") {
@@ -219,6 +234,31 @@ export async function POST(req: NextRequest) {
             "API key Anda tidak valid atau telah mencapai batas kuota. Silakan periksa kembali di Pengaturan.",
         },
         { status: 401 }
+      );
+    }
+
+    // Check for rate limit / quota exceeded errors
+    if (message.includes("429") || message.includes("rate limit") || message.toLowerCase().includes("quota")) {
+      const providerHint = provider === "gemini"
+        ? "API key Gemini gratis memiliki batas penggunaan harian. Jika habis, Anda bisa membuat API key baru di Google AI Studio atau menunggu reset otomatis keesokan harinya."
+        : "Model gratis OpenRouter memiliki limit harian. Jika habis, Anda bisa membuat API key baru di OpenRouter atau upgrade untuk limit lebih tinggi.";
+
+      return NextResponse.json(
+        {
+          error: `Kuota API ${provider === "gemini" ? "Gemini" : "OpenRouter"} telah habis. ${providerHint}`,
+        },
+        { status: 429 }
+      );
+    }
+
+    // Check for insufficient credit (OpenRouter paid models)
+    if (message.toLowerCase().includes("credit") || message.toLowerCase().includes("insufficient")) {
+      return NextResponse.json(
+        {
+          error:
+            "Kredit API key Anda tidak mencukupi. Silakan gunakan model gratis atau tambahkan kredit di pengaturan provider Anda.",
+        },
+        { status: 402 }
       );
     }
 

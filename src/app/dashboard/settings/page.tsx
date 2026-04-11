@@ -40,11 +40,9 @@ import {
   Mail,
   Info,
   Bot,
-  Cpu,
   Zap,
   Sparkles,
   Brain,
-  Crosshair,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -58,7 +56,7 @@ import {
 const apiKeySchema = z.object({
   apiKey: z.string().optional(),
   provider: z.string().min(1, "Pilih provider"),
-  model: z.string().min(1, "Pilih model"),
+  model: z.string().optional(), // Optional for Gemini (auto-selected)
 });
 
 type ApiKeyForm = z.infer<typeof apiKeySchema>;
@@ -186,13 +184,49 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
     resolver: zodResolver(apiKeySchema),
     defaultValues: {
       provider: initialSettings?.apiProvider || "gemini",
-      model: initialSettings?.apiModel || "minimax/minimax-m2.5:free",
+      model: initialSettings?.apiModel || "google/gemma-4-31b-it:free",
       apiKey: "",
     },
   });
 
   const provider = watch("provider");
   const model = watch("model");
+
+  // Only OpenRouter needs model selection - Gemini auto-selects the best model
+  const showModelSelection = provider === "openrouter";
+
+  // Reset model when provider changes
+  useEffect(() => {
+    if (provider === "gemini") {
+      setValue("model", "auto");
+    } else {
+      setValue("model", "google/gemma-4-31b-it:free");
+    }
+  }, [provider, setValue]);
+
+  // OpenRouter free models only
+  const modelOptions = [
+    {
+      value: "google/gemma-4-31b-it:free",
+      label: "Google Gemma 4 31B",
+      description: "Model gratis, performa tinggi untuk PRD",
+      badge: "Free",
+      badgeColor: "bg-[#F0FDF4] text-[#166534] border border-[#BBF7D0]",
+      icon: Sparkles,
+      iconColor: "text-[#4285F4]",
+      iconBg: "bg-[#EEF2FF]",
+    },
+    {
+      value: "openai/gpt-oss-120b:free",
+      label: "OpenAI GPT-OSS 120B",
+      description: "Model open-source gratis dari OpenAI",
+      badge: "Free",
+      badgeColor: "bg-[#F0FDF4] text-[#166534] border border-[#BBF7D0]",
+      icon: Brain,
+      iconColor: "text-[#10A37F]",
+      iconBg: "bg-[#F0FDF4]",
+    },
+  ];
 
   const onSubmit = async (data: ApiKeyForm) => {
     setIsLoading(true);
@@ -205,7 +239,9 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
         formData.append("apiKey", ""); // Use default
       }
       formData.append("provider", data.provider);
-      formData.append("model", data.model);
+      // For Gemini, model is auto-selected; for OpenRouter, use selected model
+      const selectedModel = data.provider === "gemini" ? "auto" : (data.model || "google/gemma-4-31b-it:free");
+      formData.append("model", selectedModel);
 
       await updateApiKey(formData);
       toast.success("Konfigurasi API berhasil disimpan!");
@@ -239,67 +275,28 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
     },
   ];
 
-  const modelOptions = [
-    {
-      value: "minimax/minimax-m2.5:free",
-      label: "MiniMax M2.5",
-      description: "Model gratis, cocok untuk PRD standar",
-      badge: "Free",
-      badgeColor: "bg-[#F0FDF4] text-[#166534] border border-[#BBF7D0]",
-      icon: Zap,
-      iconColor: "text-[#F59E0B]",
-      iconBg: "bg-[#FFFBEB]",
-    },
-    {
-      value: "google/gemini-2.0-flash-exp:free",
-      label: "Gemini 2.0 Flash",
-      description: "Cepat dan akurat untuk PRD detail",
-      badge: "Free",
-      badgeColor: "bg-[#F0FDF4] text-[#166534] border border-[#BBF7D0]",
-      icon: Sparkles,
-      iconColor: "text-[#4285F4]",
-      iconBg: "bg-[#EEF2FF]",
-    },
-    {
-      value: "openai/gpt-4o-mini",
-      label: "GPT-4o Mini",
-      description: "Model OpenAI yang efisien",
-      badge: "",
-      badgeColor: "",
-      icon: Brain,
-      iconColor: "text-[#10A37F]",
-      iconBg: "bg-[#F0FDF4]",
-    },
-    {
-      value: "anthropic/claude-3-haiku",
-      label: "Claude 3 Haiku",
-      description: "Cepat dan hemat token",
-      badge: "",
-      badgeColor: "",
-      icon: Crosshair,
-      iconColor: "text-[#D97757]",
-      iconBg: "bg-[#FFF7ED]",
-    },
-  ];
-
   const providerInfo = provider === "gemini"
     ? {
         name: "Google Gemini",
-        description: "Gunakan Google Gemini API untuk menghasilkan PRD. Anda bisa menggunakan API key bawaan aplikasi atau API key Gemini Anda sendiri.",
+        description: "Gunakan Google Gemini API untuk menghasilkan PRD. Model AI dipilih otomatis oleh Google berdasarkan ketersediaan kuota gratis. Anda bisa menggunakan API key bawaan aplikasi atau API key Gemini Anda sendiri.",
         customKeyLabel: "Gunakan API key Gemini sendiri (opsional)",
         customKeyPlaceholder: "AIzaSy...",
         customKeyHint: "Dapatkan API key di",
         customKeyUrl: "https://aistudio.google.com/app/apikey",
         customKeyUrlText: "aistudio.google.com/app/apikey",
+        modelInfo: "Model dipilih otomatis oleh Google Gemini",
+        resetInfo: "API key gratis Gemini memiliki batas penggunaan harian. Jika habis, Anda bisa membuat API key baru di Google AI Studio atau menunggu reset otomatis keesokan harinya.",
       }
     : {
         name: "OpenRouter",
-        description: "Gunakan OpenRouter untuk mengakses berbagai model AI. Anda bisa menggunakan API key bawaan aplikasi atau API key OpenRouter Anda sendiri.",
+        description: "Gunakan OpenRouter untuk mengakses berbagai model AI gratis. Pilih model yang tersedia di bawah. Anda bisa menggunakan API key bawaan aplikasi atau API key OpenRouter Anda sendiri.",
         customKeyLabel: "Gunakan API key OpenRouter sendiri (opsional)",
         customKeyPlaceholder: "sk-or-v1-...",
         customKeyHint: "Dapatkan API key di",
         customKeyUrl: "https://openrouter.ai/keys",
         customKeyUrlText: "openrouter.ai/keys",
+        modelInfo: "Pilih salah satu model gratis yang tersedia",
+        resetInfo: "Model gratis OpenRouter memiliki limit harian. Jika habis, Anda bisa membuat API key baru atau upgrade ke versi berbayar untuk limit lebih tinggi.",
       };
 
   return (
@@ -317,7 +314,16 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
         <Alert className="mb-6 bg-[#EEF2FF] border-[#C7D2FE] text-[#3730A3]">
           <Info className="h-4 w-4" />
           <AlertDescription>
-            Aplikasi ini menggunakan AI untuk menghasilkan PRD. Pilih provider yang diinginkan dan gunakan API key bawaan (gratis) atau masukkan API key Anda sendiri.
+            {provider === "gemini"
+              ? "Google Gemini menyediakan API key gratis dengan limit harian. Jika kuota habis, buat API key baru di Google AI Studio atau tunggu reset otomatis keesokan hari."
+              : "OpenRouter menyediakan model gratis dengan limit harian. Jika kuota habis, buat API key baru atau upgrade untuk limit lebih tinggi."}
+          </AlertDescription>
+        </Alert>
+
+        <Alert className="mb-6 bg-[#FFFBEB] border-[#FDE68A] text-[#92400E]">
+          <Zap className="h-4 w-4" />
+          <AlertDescription className="text-sm">
+            <strong>Peringatan API Gratis:</strong> {providerInfo.resetInfo}
           </AlertDescription>
         </Alert>
 
@@ -372,55 +378,71 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="model" className="text-[#334155]">
-              Model AI
-            </Label>
-            <Select
-              value={model}
-              onValueChange={(value) => setValue("model", value)}
-            >
-              <SelectTrigger className="border-[#E2E8F0] focus:border-[#4F46E5] focus:ring-[#4F46E5] h-auto py-3">
-                <SelectValue placeholder="Pilih model" />
-              </SelectTrigger>
-              <SelectContent className="min-w-[300px]">
-                {modelOptions.map((option) => {
-                  const IconComponent = option.icon;
-                  return (
-                    <SelectItem
-                      key={option.value}
-                      value={option.value}
-                      className="py-2.5 px-2"
-                    >
-                      <div className="flex items-center gap-3 w-full">
-                        <div className={`flex-shrink-0 h-8 w-8 rounded-md ${option.iconBg} flex items-center justify-center`}>
-                          <IconComponent className={`h-4 w-4 ${option.iconColor}`} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-[#0F172A] text-sm">
-                              {option.label}
-                            </span>
-                            {option.badge && (
-                              <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ${option.badgeColor}`}>
-                                {option.badge}
-                              </span>
-                            )}
+          {showModelSelection && (
+            <div className="space-y-2">
+              <Label htmlFor="model" className="text-[#334155]">
+                Model AI ({providerInfo.modelInfo})
+              </Label>
+              <Select
+                value={model}
+                onValueChange={(value) => setValue("model", value)}
+              >
+                <SelectTrigger className="border-[#E2E8F0] focus:border-[#4F46E5] focus:ring-[#4F46E5] h-auto py-3">
+                  <SelectValue placeholder="Pilih model" />
+                </SelectTrigger>
+                <SelectContent className="min-w-[300px]">
+                  {modelOptions.map((option) => {
+                    const IconComponent = option.icon;
+                    return (
+                      <SelectItem
+                        key={option.value}
+                        value={option.value}
+                        className="py-2.5 px-2"
+                      >
+                        <div className="flex items-center gap-3 w-full">
+                          <div className={`flex-shrink-0 h-8 w-8 rounded-md ${option.iconBg} flex items-center justify-center`}>
+                            <IconComponent className={`h-4 w-4 ${option.iconColor}`} />
                           </div>
-                          <p className="text-xs text-[#64748B] mt-0.5 truncate">
-                            {option.description}
-                          </p>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-[#0F172A] text-sm">
+                                {option.label}
+                              </span>
+                              {option.badge && (
+                                <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ${option.badgeColor}`}>
+                                  {option.badge}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-[#64748B] mt-0.5 truncate">
+                              {option.description}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-            {errors.model && (
-              <p className="text-sm text-[#F43F5E]">{errors.model.message}</p>
-            )}
-          </div>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+              {errors.model && (
+                <p className="text-sm text-[#F43F5E]">{errors.model.message}</p>
+              )}
+            </div>
+          )}
+
+          {!showModelSelection && (
+            <div className="space-y-2">
+              <Label className="text-[#334155]">
+                Model AI
+              </Label>
+              <div className="flex items-center gap-2 p-3 rounded-lg border border-[#E2E8F0] bg-[#F8FAFC]">
+                <Bot className="h-4 w-4 text-[#4285F4]" />
+                <span className="text-sm text-[#64748B]">
+                  {providerInfo.modelInfo}
+                </span>
+              </div>
+            </div>
+          )}
 
           <div className="space-y-4">
             <div className="flex items-center space-x-2">

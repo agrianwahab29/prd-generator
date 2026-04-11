@@ -12,7 +12,9 @@ import { revalidatePath } from "next/cache";
 // These should be set in Vercel dashboard or .env.local
 const DEFAULT_OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || "";
 const DEFAULT_GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
-const DEFAULT_MODEL = process.env.DEFAULT_MODEL || "minimax/minimax-m2.5:free";
+// Default models per provider - Gemini uses "auto" (Google picks best model)
+const DEFAULT_GEMINI_MODEL = "auto";
+const DEFAULT_OPENROUTER_MODEL = "google/gemma-4-31b-it:free";
 
 export async function updateApiKey(formData: FormData) {
   const session = await auth.api.getSession({
@@ -40,7 +42,8 @@ export async function updateApiKey(formData: FormData) {
     }
     finalApiKey = defaultKey;
   }
-  const finalModel = model?.trim() || DEFAULT_MODEL;
+  // Set default model based on provider
+  const finalModel = model?.trim() || (provider === "gemini" ? DEFAULT_GEMINI_MODEL : DEFAULT_OPENROUTER_MODEL);
 
   const encrypted = encrypt(finalApiKey);
 
@@ -93,7 +96,7 @@ export async function getUserSettings() {
   if (settings.length === 0) {
     return {
       apiProvider: "gemini",
-      apiModel: DEFAULT_MODEL,
+      apiModel: DEFAULT_GEMINI_MODEL,
       hasCustomApiKey: false,
       language: "id",
       notifyPrdGenerated: true,
@@ -111,7 +114,7 @@ export async function getUserSettings() {
 
   return {
     apiProvider: s.apiProvider || "gemini",
-    apiModel: s.apiModel || DEFAULT_MODEL,
+    apiModel: s.apiModel || (s.apiProvider === "gemini" ? DEFAULT_GEMINI_MODEL : DEFAULT_OPENROUTER_MODEL),
     hasCustomApiKey: !!s.apiKeyEncrypted && !isUsingDefaultKey,
     language: s.language || "id",
     notifyPrdGenerated: s.notifyPrdGenerated === "true",
@@ -228,17 +231,18 @@ export async function getDecryptedApiKey(userId: string): Promise<{ key: string;
     }
     return {
       key: defaultKey,
-      model: DEFAULT_MODEL,
+      model: provider === "gemini" ? DEFAULT_GEMINI_MODEL : DEFAULT_OPENROUTER_MODEL,
       provider,
     };
   }
 
   try {
     const decrypted = decrypt(settings[0].apiKeyEncrypted);
+    const userProvider = settings[0].apiProvider || "gemini";
     return {
       key: decrypted,
-      model: settings[0].apiModel || DEFAULT_MODEL,
-      provider: settings[0].apiProvider || "gemini",
+      model: settings[0].apiModel || (userProvider === "gemini" ? DEFAULT_GEMINI_MODEL : DEFAULT_OPENROUTER_MODEL),
+      provider: userProvider,
     };
   } catch (error) {
     console.error("Failed to decrypt API key:", error);
@@ -250,7 +254,7 @@ export async function getDecryptedApiKey(userId: string): Promise<{ key: string;
     }
     return {
       key: defaultKey,
-      model: DEFAULT_MODEL,
+      model: provider === "gemini" ? DEFAULT_GEMINI_MODEL : DEFAULT_OPENROUTER_MODEL,
       provider,
     };
   }
