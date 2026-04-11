@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -23,7 +24,6 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Settings,
@@ -43,6 +43,12 @@ import {
   Zap,
   Sparkles,
   Brain,
+  ChevronRight,
+  Cpu,
+  CheckCircle2,
+  AlertTriangle,
+  Lock,
+  FileText,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -56,7 +62,7 @@ import {
 const apiKeySchema = z.object({
   apiKey: z.string().optional(),
   provider: z.string().min(1, "Pilih provider"),
-  model: z.string().optional(), // Optional for Gemini (auto-selected)
+  model: z.string().optional(),
 });
 
 type ApiKeyForm = z.infer<typeof apiKeySchema>;
@@ -77,12 +83,47 @@ interface UserSettings {
   notifyMarketing: boolean;
 }
 
+// Enhanced animation variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+      delayChildren: 0.05,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: [0.22, 1, 0.36, 1] as const,
+    },
+  },
+};
+
+const cardHoverVariants = {
+  rest: { scale: 1, y: 0 },
+  hover: { 
+    scale: 1.01, 
+    y: -2,
+    transition: { duration: 0.2, ease: "easeOut" }
+  },
+};
+
 export default function SettingsPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     async function loadData() {
       try {
         const [profileData, settingsData] = await Promise.all([
@@ -101,71 +142,127 @@ export default function SettingsPage() {
     loadData();
   }, []);
 
+  if (!mounted) return null;
+
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-2xl font-bold text-[#0F172A]">Pengaturan</h2>
-          <p className="text-[#475569]">Kelola preferensi akun dan konfigurasi API</p>
-        </div>
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-[#4F46E5]" />
-        </div>
+      <div className="min-h-[80vh] flex flex-col items-center justify-center">
+        <motion.div
+          className="flex gap-1.5"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          {[0, 1, 2].map((i) => (
+            <motion.div
+              key={i}
+              className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600"
+              animate={{ y: [0, -10, 0] }}
+              transition={{ 
+                duration: 0.6, 
+                repeat: Infinity, 
+                delay: i * 0.15,
+                ease: "easeInOut"
+              }}
+            />
+          ))}
+        </motion.div>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="mt-4 text-sm text-slate-500 font-medium"
+        >
+          Memuat pengaturan...
+        </motion.p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold text-[#0F172A]">Pengaturan</h2>
-        <p className="text-[#475569]">
-          Kelola preferensi akun dan konfigurasi API
+    <motion.div
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+      className="space-y-8 max-w-5xl mx-auto"
+    >
+      {/* Header - Clean Editorial Style */}
+      <motion.div variants={itemVariants} className="space-y-2">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500/10 to-violet-500/10 border border-indigo-200/50">
+            <Settings className="h-5 w-5 text-indigo-600" />
+          </div>
+          <div>
+            <span className="text-xs font-semibold text-indigo-600/80 uppercase tracking-wider">
+              Konfigurasi
+            </span>
+            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
+              Pengaturan
+            </h1>
+          </div>
+        </div>
+        <p className="text-slate-500 text-base max-w-xl leading-relaxed">
+          Kelola preferensi akun dan konfigurasi API untuk pengalaman terbaik dalam membuat PRD
         </p>
-      </div>
+      </motion.div>
 
-      <Tabs defaultValue="api" className="w-full">
-        <TabsList className="bg-white border border-[#E2E8F0] mb-6 overflow-x-auto scrollbar-thin">
-          <TabsTrigger value="api" className="data-[state=active]:bg-[#EEF2FF] data-[state=active]:text-[#4F46E5]">
-            <Key className="h-4 w-4 mr-2" />
-            API Key
-          </TabsTrigger>
-          <TabsTrigger value="profile" className="data-[state=active]:bg-[#EEF2FF] data-[state=active]:text-[#4F46E5]">
-            <Settings className="h-4 w-4 mr-2" />
-            Profil
-          </TabsTrigger>
-          <TabsTrigger value="language" className="data-[state=active]:bg-[#EEF2FF] data-[state=active]:text-[#4F46E5]">
-            <Globe className="h-4 w-4 mr-2" />
-            Bahasa
-          </TabsTrigger>
-          <TabsTrigger value="notifications" className="data-[state=active]:bg-[#EEF2FF] data-[state=active]:text-[#4F46E5]">
-            <Bell className="h-4 w-4 mr-2" />
-            Notifikasi
-          </TabsTrigger>
-        </TabsList>
+      {/* Tabs with enhanced styling */}
+      <motion.div variants={itemVariants}>
+        <Tabs defaultValue="api" className="w-full">
+          <TabsList className="bg-white border border-slate-200/80 mb-8 p-1.5 rounded-xl shadow-sm shadow-slate-200/50 h-auto inline-flex">
+            <TabsTrigger 
+              value="api" 
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500/10 data-[state=active]:to-violet-500/10 data-[state=active]:text-indigo-700 data-[state=active]:border-indigo-200 data-[state=active]:shadow-sm px-5 py-2.5 text-sm font-medium text-slate-600 transition-all rounded-lg border border-transparent"
+            >
+              <Key className="h-4 w-4 mr-2" />
+              API Key
+            </TabsTrigger>
+            <TabsTrigger 
+              value="profile"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500/10 data-[state=active]:to-violet-500/10 data-[state=active]:text-indigo-700 data-[state=active]:border-indigo-200 data-[state=active]:shadow-sm px-5 py-2.5 text-sm font-medium text-slate-600 transition-all rounded-lg border border-transparent"
+            >
+              <User className="h-4 w-4 mr-2" />
+              Profil
+            </TabsTrigger>
+            <TabsTrigger 
+              value="language"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500/10 data-[state=active]:to-violet-500/10 data-[state=active]:text-indigo-700 data-[state=active]:border-indigo-200 data-[state=active]:shadow-sm px-5 py-2.5 text-sm font-medium text-slate-600 transition-all rounded-lg border border-transparent"
+            >
+              <Globe className="h-4 w-4 mr-2" />
+              Bahasa
+            </TabsTrigger>
+            <TabsTrigger 
+              value="notifications"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500/10 data-[state=active]:to-violet-500/10 data-[state=active]:text-indigo-700 data-[state=active]:border-indigo-200 data-[state=active]:shadow-sm px-5 py-2.5 text-sm font-medium text-slate-600 transition-all rounded-lg border border-transparent"
+            >
+              <Bell className="h-4 w-4 mr-2" />
+              Notifikasi
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="api" className="space-y-6">
-          <ApiKeySettings initialSettings={settings} />
-        </TabsContent>
+          <AnimatePresence mode="wait">
+            <TabsContent value="api" className="space-y-6 mt-0">
+              <ApiKeySettings initialSettings={settings} />
+            </TabsContent>
 
-        <TabsContent value="profile" className="space-y-6">
-          <ProfileSettings profile={profile} />
-        </TabsContent>
+            <TabsContent value="profile" className="space-y-6 mt-0">
+              <ProfileSettings profile={profile} />
+            </TabsContent>
 
-        <TabsContent value="language" className="space-y-6">
-          <LanguageSettings initialLanguage={settings?.language || "id"} />
-        </TabsContent>
+            <TabsContent value="language" className="space-y-6 mt-0">
+              <LanguageSettings initialLanguage={settings?.language || "id"} />
+            </TabsContent>
 
-        <TabsContent value="notifications" className="space-y-6">
-          <NotificationSettings
-            initialPrdGenerated={settings?.notifyPrdGenerated ?? true}
-            initialEmailUpdates={settings?.notifyEmailUpdates ?? true}
-            initialMarketing={settings?.notifyMarketing ?? false}
-          />
-        </TabsContent>
-      </Tabs>
-    </div>
+            <TabsContent value="notifications" className="space-y-6 mt-0">
+              <NotificationSettings
+                initialPrdGenerated={settings?.notifyPrdGenerated ?? true}
+                initialEmailUpdates={settings?.notifyEmailUpdates ?? true}
+                initialMarketing={settings?.notifyMarketing ?? false}
+              />
+            </TabsContent>
+          </AnimatePresence>
+        </Tabs>
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -192,10 +289,8 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
   const provider = watch("provider");
   const model = watch("model");
 
-  // Only OpenRouter needs model selection - Gemini auto-selects the best model
   const showModelSelection = provider === "openrouter";
 
-  // Reset model when provider changes
   useEffect(() => {
     if (provider === "gemini") {
       setValue("model", "auto");
@@ -204,47 +299,23 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
     }
   }, [provider, setValue]);
 
-  // OpenRouter free models only
-  const modelOptions = [
-    {
-      value: "google/gemma-4-31b-it:free",
-      label: "Google Gemma 4 31B",
-      description: "Model gratis, performa tinggi untuk PRD",
-      badge: "Free",
-      badgeColor: "bg-[#F0FDF4] text-[#166534] border border-[#BBF7D0]",
-      icon: Sparkles,
-      iconColor: "text-[#4285F4]",
-      iconBg: "bg-[#EEF2FF]",
-    },
-    {
-      value: "openai/gpt-oss-120b:free",
-      label: "OpenAI GPT-OSS 120B",
-      description: "Model open-source gratis dari OpenAI",
-      badge: "Free",
-      badgeColor: "bg-[#F0FDF4] text-[#166534] border border-[#BBF7D0]",
-      icon: Brain,
-      iconColor: "text-[#10A37F]",
-      iconBg: "bg-[#F0FDF4]",
-    },
-  ];
-
   const onSubmit = async (data: ApiKeyForm) => {
     setIsLoading(true);
     try {
       const formData = new FormData();
-      // Only send API key if using custom key
       if (useCustomKey && data.apiKey) {
         formData.append("apiKey", data.apiKey);
       } else {
-        formData.append("apiKey", ""); // Use default
+        formData.append("apiKey", "");
       }
       formData.append("provider", data.provider);
-      // For Gemini, model is auto-selected; for OpenRouter, use selected model
       const selectedModel = data.provider === "gemini" ? "auto" : (data.model || "google/gemma-4-31b-it:free");
       formData.append("model", selectedModel);
 
       await updateApiKey(formData);
-      toast.success("Konfigurasi API berhasil disimpan!");
+      toast.success("Konfigurasi API berhasil disimpan!", {
+        icon: <CheckCircle2 className="h-4 w-4 text-emerald-500" />,
+      });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Gagal menyimpan konfigurasi API");
     } finally {
@@ -252,342 +323,430 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
     }
   };
 
-  const providerOptions = [
-    {
-      value: "gemini",
-      label: "Google Gemini",
-      description: "Model AI terbaik untuk PRD generation",
-      badge: "Recommended",
-      badgeColor: "bg-[#F0FDF4] text-[#166534] border border-[#BBF7D0]",
-      icon: Bot,
-      iconColor: "text-[#4285F4]",
-      iconBg: "bg-[#EEF2FF]",
-    },
-    {
-      value: "openrouter",
-      label: "OpenRouter",
-      description: "Akses berbagai model AI populer",
-      badge: "",
-      badgeColor: "",
-      icon: Globe,
-      iconColor: "text-[#6366F1]",
-      iconBg: "bg-[#EEF2FF]",
-    },
-  ];
-
-  const providerInfo = provider === "gemini"
-    ? {
-        name: "Google Gemini",
-        description: "Gunakan Google Gemini API untuk menghasilkan PRD. Model AI dipilih otomatis oleh Google berdasarkan ketersediaan kuota gratis. Anda bisa menggunakan API key bawaan aplikasi atau API key Gemini Anda sendiri.",
-        customKeyLabel: "Gunakan API key Gemini sendiri (opsional)",
-        customKeyPlaceholder: "AIzaSy...",
-        customKeyHint: "Dapatkan API key di",
-        customKeyUrl: "https://aistudio.google.com/app/apikey",
-        customKeyUrlText: "aistudio.google.com/app/apikey",
-        modelInfo: "Model dipilih otomatis oleh Google Gemini",
-        resetInfo: "API key gratis Gemini memiliki batas penggunaan harian. Jika habis, Anda bisa membuat API key baru di Google AI Studio atau menunggu reset otomatis keesokan harinya.",
-      }
-    : {
-        name: "OpenRouter",
-        description: "Gunakan OpenRouter untuk mengakses berbagai model AI gratis. Pilih model yang tersedia di bawah. Anda bisa menggunakan API key bawaan aplikasi atau API key OpenRouter Anda sendiri.",
-        customKeyLabel: "Gunakan API key OpenRouter sendiri (opsional)",
-        customKeyPlaceholder: "sk-or-v1-...",
-        customKeyHint: "Dapatkan API key di",
-        customKeyUrl: "https://openrouter.ai/keys",
-        customKeyUrlText: "openrouter.ai/keys",
-        modelInfo: "Pilih salah satu model gratis yang tersedia",
-        resetInfo: "Model gratis OpenRouter memiliki limit harian. Jika habis, Anda bisa membuat API key baru atau upgrade ke versi berbayar untuk limit lebih tinggi.",
-      };
-
   return (
-    <Card className="border-[#E2E8F0]">
-      <CardHeader>
-        <CardTitle className="text-lg font-semibold text-[#0F172A] flex items-center gap-2">
-          <Key className="h-5 w-5 text-[#4F46E5]" />
-          Konfigurasi AI Provider
-        </CardTitle>
-        <CardDescription>
-          Atur provider AI dan API key untuk menghasilkan PRD. Anda bisa menggunakan API key bawaan aplikasi atau menggunakan API key sendiri.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Alert className="mb-6 bg-[#EEF2FF] border-[#C7D2FE] text-[#3730A3]">
-          <Info className="h-4 w-4" />
-          <AlertDescription>
-            {provider === "gemini"
-              ? "Google Gemini menyediakan API key gratis dengan limit harian. Jika kuota habis, buat API key baru di Google AI Studio atau tunggu reset otomatis keesokan hari."
-              : "OpenRouter menyediakan model gratis dengan limit harian. Jika kuota habis, buat API key baru atau upgrade untuk limit lebih tinggi."}
-          </AlertDescription>
-        </Alert>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <Card className="border-slate-200/80 shadow-lg shadow-slate-200/50 bg-white/90 backdrop-blur-sm overflow-hidden">
+        <CardHeader className="pb-6 border-b border-slate-100">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500/10 to-violet-500/10 border border-indigo-200/50">
+              <Cpu className="h-6 w-6 text-indigo-600" />
+            </div>
+            <div>
+              <CardTitle className="text-xl font-semibold text-slate-900">
+                Konfigurasi AI Provider
+              </CardTitle>
+              <CardDescription className="text-sm text-slate-500 mt-1">
+                Pilih provider AI dan konfigurasi API key untuk generate PRD
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-6 space-y-6">
+          {/* Info Alert - Enhanced */}
+          <Alert className="bg-gradient-to-r from-indigo-50/80 to-violet-50/80 border-indigo-200/50 text-indigo-900 rounded-xl">
+            <Info className="h-4 w-4 text-indigo-600" />
+            <AlertDescription className="text-sm text-indigo-800/80">
+              {provider === "gemini"
+                ? "Google Gemini menyediakan API key gratis dengan limit harian. Model dipilih otomatis berdasarkan ketersediaan kuota."
+                : "OpenRouter menyediakan akses ke berbagai model AI dengan limit harian. Pilih model yang tersedia di bawah."}
+            </AlertDescription>
+          </Alert>
 
-        <Alert className="mb-6 bg-[#FFFBEB] border-[#FDE68A] text-[#92400E]">
-          <Zap className="h-4 w-4" />
-          <AlertDescription className="text-sm">
-            <strong>Peringatan API Gratis:</strong> {providerInfo.resetInfo}
-          </AlertDescription>
-        </Alert>
+          {/* Warning Alert - Enhanced */}
+          <Alert className="bg-gradient-to-r from-amber-50/80 to-orange-50/80 border-amber-200/50 text-amber-900 rounded-xl">
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="text-sm text-amber-800/80">
+              <strong className="font-semibold">Perhatian:</strong>{" "}
+              {provider === "gemini"
+                ? "API key gratis memiliki batas penggunaan harian. Jika kuota habis, Anda perlu menunggu reset otomatis keesokan hari."
+                : "Model gratis memiliki limit harian. Jika kuota habis, Anda bisa membuat API key baru atau upgrade ke versi berbayar."}
+            </AlertDescription>
+          </Alert>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="provider" className="text-[#334155]">
-              AI Provider
-            </Label>
-            <Select
-              value={provider}
-              onValueChange={(value) => setValue("provider", value)}
-            >
-              <SelectTrigger className="border-[#E2E8F0] focus:border-[#4F46E5] focus:ring-[#4F46E5] h-auto py-3">
-                <SelectValue placeholder="Pilih provider" />
-              </SelectTrigger>
-              <SelectContent className="min-w-[300px]">
-                {providerOptions.map((option) => {
-                  const IconComponent = option.icon;
-                  return (
-                    <SelectItem
-                      key={option.value}
-                      value={option.value}
-                      className="py-2.5 px-2"
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            {/* Provider Selection - Card Style */}
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold text-slate-700">AI Provider</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <motion.button
+                  type="button"
+                  onClick={() => setValue("provider", "gemini")}
+                  whileHover={{ scale: 1.01, y: -2 }}
+                  whileTap={{ scale: 0.99 }}
+                  className={`relative p-5 rounded-xl border text-left transition-all duration-300 overflow-hidden group
+                    ${provider === "gemini"
+                      ? "border-indigo-400 bg-gradient-to-br from-indigo-50/80 to-violet-50/50 shadow-lg shadow-indigo-500/10 ring-1 ring-indigo-500/20"
+                      : "bg-slate-50/80 border-slate-200/80 hover:border-indigo-300/50 hover:bg-white hover:shadow-md"
+                    }`}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className={`flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center shadow-sm transition-all duration-300
+                      ${provider === "gemini" 
+                        ? "bg-gradient-to-br from-blue-500 to-blue-600 shadow-blue-500/25" 
+                        : "bg-blue-100 group-hover:bg-blue-200"}`}
                     >
-                      <div className="flex items-center gap-3 w-full">
-                        <div className={`flex-shrink-0 h-8 w-8 rounded-md ${option.iconBg} flex items-center justify-center`}>
-                          <IconComponent className={`h-4 w-4 ${option.iconColor}`} />
+                      <Bot className={`h-5 w-5 transition-colors ${provider === "gemini" ? "text-white" : "text-blue-600"}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`font-semibold text-sm ${provider === "gemini" ? "text-slate-900" : "text-slate-700"}`}>
+                          Google Gemini
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200/50">
+                          Rekomendasi
+                        </span>
+                      </div>
+                      <p className={`text-xs leading-relaxed ${provider === "gemini" ? "text-indigo-700/70" : "text-slate-500"}`}>
+                        Model dipilih otomatis berdasarkan ketersediaan
+                      </p>
+                    </div>
+                  </div>
+                  {provider === "gemini" && (
+                    <motion.div
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      className="absolute top-4 right-4 w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center shadow-lg shadow-indigo-500/30"
+                    >
+                      <Check className="h-3.5 w-3.5 text-white" />
+                    </motion.div>
+                  )}
+                </motion.button>
+
+                <motion.button
+                  type="button"
+                  onClick={() => setValue("provider", "openrouter")}
+                  whileHover={{ scale: 1.01, y: -2 }}
+                  whileTap={{ scale: 0.99 }}
+                  className={`relative p-5 rounded-xl border text-left transition-all duration-300 overflow-hidden group
+                    ${provider === "openrouter"
+                      ? "border-indigo-400 bg-gradient-to-br from-indigo-50/80 to-violet-50/50 shadow-lg shadow-indigo-500/10 ring-1 ring-indigo-500/20"
+                      : "bg-slate-50/80 border-slate-200/80 hover:border-indigo-300/50 hover:bg-white hover:shadow-md"
+                    }`}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className={`flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center shadow-sm transition-all duration-300
+                      ${provider === "openrouter" 
+                        ? "bg-gradient-to-br from-violet-500 to-violet-600 shadow-violet-500/25" 
+                        : "bg-violet-100 group-hover:bg-violet-200"}`}
+                    >
+                      <Globe className={`h-5 w-5 transition-colors ${provider === "openrouter" ? "text-white" : "text-violet-600"}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className={`font-semibold text-sm block mb-1 ${provider === "openrouter" ? "text-slate-900" : "text-slate-700"}`}>
+                        OpenRouter
+                      </span>
+                      <p className={`text-xs leading-relaxed ${provider === "openrouter" ? "text-indigo-700/70" : "text-slate-500"}`}>
+                        Pilih model manual dari berbagai provider
+                      </p>
+                    </div>
+                  </div>
+                  {provider === "openrouter" && (
+                    <motion.div
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      className="absolute top-4 right-4 w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center shadow-lg shadow-indigo-500/30"
+                    >
+                      <Check className="h-3.5 w-3.5 text-white" />
+                    </motion.div>
+                  )}
+                </motion.button>
+              </div>
+            </div>
+
+            {/* Model Selection - Only for OpenRouter */}
+            <AnimatePresence mode="wait">
+              {showModelSelection && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                  className="space-y-3"
+                >
+                  <Label className="text-sm font-semibold text-slate-700">Model AI</Label>
+                  <div className="grid grid-cols-1 gap-3">
+                    <motion.button
+                      type="button"
+                      onClick={() => setValue("model", "google/gemma-4-31b-it:free")}
+                      whileHover={{ scale: 1.005, y: -1 }}
+                      whileTap={{ scale: 0.995 }}
+                      className={`relative p-4 rounded-xl border text-left transition-all duration-300
+                        ${model === "google/gemma-4-31b-it:free"
+                          ? "border-indigo-400 bg-gradient-to-br from-indigo-50/80 to-violet-50/50 shadow-md ring-1 ring-indigo-500/20"
+                          : "bg-slate-50/60 border-slate-200/80 hover:border-indigo-300/50 hover:bg-white"
+                        }`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center shadow-sm
+                          ${model === "google/gemma-4-31b-it:free" ? "bg-gradient-to-br from-blue-500 to-blue-600" : "bg-blue-100"}`}
+                        >
+                          <Sparkles className={`h-5 w-5 ${model === "google/gemma-4-31b-it:free" ? "text-white" : "text-blue-600"}`} />
                         </div>
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1">
                           <div className="flex items-center gap-2">
-                            <span className="font-medium text-[#0F172A] text-sm">
-                              {option.label}
+                            <span className={`font-semibold text-sm ${model === "google/gemma-4-31b-it:free" ? "text-slate-900" : "text-slate-700"}`}>
+                              Google Gemma 4 31B
                             </span>
-                            {option.badge && (
-                              <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ${option.badgeColor}`}>
-                                {option.badge}
-                              </span>
-                            )}
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200/50">
+                              Free
+                            </span>
                           </div>
-                          <p className="text-xs text-[#64748B] mt-0.5 truncate">
-                            {option.description}
+                          <p className={`text-xs mt-0.5 ${model === "google/gemma-4-31b-it:free" ? "text-indigo-700/70" : "text-slate-500"}`}>
+                            Model gratis dengan performa tinggi untuk PRD
                           </p>
                         </div>
+                        {model === "google/gemma-4-31b-it:free" && (
+                          <Check className="h-5 w-5 text-indigo-500" />
+                        )}
                       </div>
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-            {errors.provider && (
-              <p className="text-sm text-[#F43F5E]">{errors.provider.message}</p>
-            )}
-          </div>
+                    </motion.button>
 
-          {showModelSelection && (
-            <div className="space-y-2">
-              <Label htmlFor="model" className="text-[#334155]">
-                Model AI ({providerInfo.modelInfo})
-              </Label>
-              <Select
-                value={model}
-                onValueChange={(value) => setValue("model", value)}
-              >
-                <SelectTrigger className="border-[#E2E8F0] focus:border-[#4F46E5] focus:ring-[#4F46E5] h-auto py-3">
-                  <SelectValue placeholder="Pilih model" />
-                </SelectTrigger>
-                <SelectContent className="min-w-[300px]">
-                  {modelOptions.map((option) => {
-                    const IconComponent = option.icon;
-                    return (
-                      <SelectItem
-                        key={option.value}
-                        value={option.value}
-                        className="py-2.5 px-2"
-                      >
-                        <div className="flex items-center gap-3 w-full">
-                          <div className={`flex-shrink-0 h-8 w-8 rounded-md ${option.iconBg} flex items-center justify-center`}>
-                            <IconComponent className={`h-4 w-4 ${option.iconColor}`} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-[#0F172A] text-sm">
-                                {option.label}
-                              </span>
-                              {option.badge && (
-                                <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ${option.badgeColor}`}>
-                                  {option.badge}
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-xs text-[#64748B] mt-0.5 truncate">
-                              {option.description}
-                            </p>
-                          </div>
+                    <motion.button
+                      type="button"
+                      onClick={() => setValue("model", "openai/gpt-oss-120b:free")}
+                      whileHover={{ scale: 1.005, y: -1 }}
+                      whileTap={{ scale: 0.995 }}
+                      className={`relative p-4 rounded-xl border text-left transition-all duration-300
+                        ${model === "openai/gpt-oss-120b:free"
+                          ? "border-indigo-400 bg-gradient-to-br from-indigo-50/80 to-violet-50/50 shadow-md ring-1 ring-indigo-500/20"
+                          : "bg-slate-50/60 border-slate-200/80 hover:border-indigo-300/50 hover:bg-white"
+                        }`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center shadow-sm
+                          ${model === "openai/gpt-oss-120b:free" ? "bg-gradient-to-br from-emerald-500 to-emerald-600" : "bg-emerald-100"}`}
+                        >
+                          <Brain className={`h-5 w-5 ${model === "openai/gpt-oss-120b:free" ? "text-white" : "text-emerald-600"}`} />
                         </div>
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-              {errors.model && (
-                <p className="text-sm text-[#F43F5E]">{errors.model.message}</p>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className={`font-semibold text-sm ${model === "openai/gpt-oss-120b:free" ? "text-slate-900" : "text-slate-700"}`}>
+                              OpenAI GPT-OSS 120B
+                            </span>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200/50">
+                              Free
+                            </span>
+                          </div>
+                          <p className={`text-xs mt-0.5 ${model === "openai/gpt-oss-120b:free" ? "text-indigo-700/70" : "text-slate-500"}`}>
+                            Model open-source gratis dari OpenAI
+                          </p>
+                        </div>
+                        {model === "openai/gpt-oss-120b:free" && (
+                          <Check className="h-5 w-5 text-indigo-500" />
+                        )}
+                      </div>
+                    </motion.button>
+                  </div>
+                </motion.div>
               )}
-            </div>
-          )}
+            </AnimatePresence>
 
-          {!showModelSelection && (
-            <div className="space-y-2">
-              <Label className="text-[#334155]">
-                Model AI
-              </Label>
-              <div className="flex items-center gap-2 p-3 rounded-lg border border-[#E2E8F0] bg-[#F8FAFC]">
-                <Bot className="h-4 w-4 text-[#4285F4]" />
-                <span className="text-sm text-[#64748B]">
-                  {providerInfo.modelInfo}
+            {/* Gemini Auto Model Info */}
+            <AnimatePresence>
+              {!showModelSelection && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-2"
+                >
+                  <Label className="text-sm font-semibold text-slate-700">Model AI</Label>
+                  <div className="flex items-center gap-4 p-4 rounded-xl border border-slate-200/80 bg-slate-50/60">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/10 to-indigo-500/10 flex items-center justify-center border border-blue-200/50">
+                      <Bot className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm text-slate-800">Auto-Select</p>
+                      <p className="text-xs text-slate-500">Google akan memilih model terbaik berdasarkan ketersediaan kuota</p>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Custom API Key Toggle */}
+            <div className="space-y-4 pt-2">
+              <motion.div 
+                whileHover={{ scale: 1.005 }}
+                className={`flex items-center space-x-4 p-5 rounded-xl border cursor-pointer transition-all duration-300
+                  ${useCustomKey 
+                    ? "border-indigo-400 bg-gradient-to-r from-indigo-50/60 to-violet-50/30 shadow-md ring-1 ring-indigo-500/10" 
+                    : "border-slate-200/80 bg-slate-50/60 hover:bg-white hover:border-slate-300/80"}`}
+                onClick={() => setUseCustomKey(!useCustomKey)}
+              >
+                <div className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200
+                  ${useCustomKey 
+                    ? "border-indigo-500 bg-indigo-500" 
+                    : "border-slate-300 bg-white"}`}
+                >
+                  {useCustomKey && <Check className="h-3 w-3 text-white" />}
+                </div>
+                <div className="flex-1">
+                  <Label className="text-sm font-semibold text-slate-800 cursor-pointer">
+                    Gunakan API Key Sendiri
+                  </Label>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {provider === "gemini" 
+                      ? "Masukkan API key Gemini Anda sendiri (opsional)" 
+                      : "Masukkan API key OpenRouter Anda sendiri (opsional)"}
+                  </p>
+                </div>
+                <Lock className={`h-4 w-4 transition-colors ${useCustomKey ? "text-indigo-500" : "text-slate-400"}`} />
+              </motion.div>
+
+              <AnimatePresence>
+                {useCustomKey && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0, y: -10 }}
+                    animate={{ opacity: 1, height: "auto", y: 0 }}
+                    exit={{ opacity: 0, height: 0, y: -10 }}
+                    transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                    className="overflow-hidden"
+                  >
+                    <div className="space-y-3 pl-4 border-l-2 border-indigo-300/50">
+                      <Label htmlFor="apiKey" className="text-sm font-semibold text-slate-700">
+                        API Key {provider === "gemini" ? "Gemini" : "OpenRouter"}
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          id="apiKey"
+                          type={showApiKey ? "text" : "password"}
+                          placeholder={provider === "gemini" ? "AIzaSy..." : "sk-or-v1-..."}
+                          className="pr-12 bg-white border-slate-200/80 focus:border-indigo-400 focus:ring-indigo-400/20 h-11 rounded-xl"
+                          {...register("apiKey")}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-1.5 top-1/2 -translate-y-1/2 h-8 w-8 text-slate-400 hover:text-slate-600 rounded-lg"
+                          onClick={() => setShowApiKey(!showApiKey)}
+                        >
+                          {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                      <p className="text-xs text-slate-500">
+                        Dapatkan API key di{" "}
+                        <a
+                          href={provider === "gemini" ? "https://aistudio.google.com/app/apikey" : "https://openrouter.ai/keys"}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-indigo-600 hover:text-indigo-700 font-semibold hover:underline"
+                        >
+                          {provider === "gemini" ? "Google AI Studio" : "OpenRouter"}
+                        </a>
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Submit Button */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-6 border-t border-slate-200/80 gap-4">
+              <div className="flex items-center gap-2 text-sm text-slate-500">
+                <Shield className="h-4 w-4 text-slate-400" />
+                <span>
+                  {useCustomKey 
+                    ? "API key akan dienkripsi dengan AES-256" 
+                    : "Menggunakan API key bawaan aplikasi"}
                 </span>
               </div>
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button
+                  type="submit"
+                  className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-lg shadow-indigo-500/25 h-11 px-6 rounded-xl font-medium"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Menyimpan...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Simpan Konfigurasi
+                    </>
+                  )}
+                </Button>
+              </motion.div>
             </div>
-          )}
-
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="useCustomKey"
-                checked={useCustomKey}
-                onCheckedChange={(checked) => setUseCustomKey(checked as boolean)}
-              />
-              <Label htmlFor="useCustomKey" className="text-[#334155] cursor-pointer">
-                {providerInfo.customKeyLabel}
-              </Label>
-            </div>
-
-            {useCustomKey && (
-              <div className="space-y-2 pl-6">
-                <Label htmlFor="apiKey" className="text-[#334155]">
-                  API Key {provider === "gemini" ? "Gemini" : "OpenRouter"}
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="apiKey"
-                    type={showApiKey ? "text" : "password"}
-                    placeholder={providerInfo.customKeyPlaceholder}
-                    className="pr-10 border-[#E2E8F0] focus:border-[#4F46E5] focus:ring-[#4F46E5]"
-                    {...register("apiKey")}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-0 top-0 h-full px-3 text-[#64748B] hover:text-[#0F172A]"
-                    onClick={() => setShowApiKey(!showApiKey)}
-                  >
-                    {showApiKey ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-                <p className="text-sm text-[#64748B]">
-                  {providerInfo.customKeyHint}{' '}
-                  <a
-                    href={providerInfo.customKeyUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[#4F46E5] hover:underline"
-                  >
-                    {providerInfo.customKeyUrlText}
-                  </a>
-                </p>
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center justify-between pt-4 border-t border-[#E2E8F0]">
-            <div className="text-sm text-[#64748B]">
-              <Shield className="inline h-4 w-4 mr-1" />
-              {useCustomKey ? "API key akan dienkripsi dengan AES-256" : "Menggunakan API key bawaan aplikasi"}
-            </div>
-            <Button
-              type="submit"
-              className="bg-[#4F46E5] hover:bg-[#4338CA] text-white"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Menyimpan...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Simpan Konfigurasi
-                </>
-              )}
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+          </form>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }
 
 function ProfileSettings({ profile }: { profile: UserProfile | null }) {
   return (
-    <Card className="border-[#E2E8F0]">
-      <CardHeader>
-        <CardTitle className="text-lg font-semibold text-[#0F172A] flex items-center gap-2">
-          <User className="h-5 w-5 text-[#4F46E5]" />
-          Informasi Profil
-        </CardTitle>
-        <CardDescription>
-          Informasi profil Anda dari Google Account
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="name" className="text-[#334155]">
-              Nama Lengkap
-            </Label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#64748B]" />
-              <Input
-                id="name"
-                type="text"
-                value={profile?.name || ""}
-                readOnly
-                className="pl-10 border-[#E2E8F0] bg-[#F8FAFC] text-[#64748B]"
-              />
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <Card className="border-slate-200/80 shadow-lg shadow-slate-200/50 bg-white/90 backdrop-blur-sm overflow-hidden">
+        <CardHeader className="pb-6 border-b border-slate-100">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-200/50">
+              <User className="h-6 w-6 text-emerald-600" />
             </div>
-            <p className="text-sm text-[#64748B]">
-              Nama diambil dari Google Account Anda
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="email" className="text-[#334155]">
-              Email
-            </Label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#64748B]" />
-              <Input
-                id="email"
-                type="email"
-                value={profile?.email || ""}
-                readOnly
-                className="pl-10 border-[#E2E8F0] bg-[#F8FAFC] text-[#64748B]"
-              />
+            <div>
+              <CardTitle className="text-xl font-semibold text-slate-900">
+                Informasi Profil
+              </CardTitle>
+              <CardDescription className="text-sm text-slate-500 mt-1">
+                Detail akun Anda dari Google Account
+              </CardDescription>
             </div>
-            <p className="text-sm text-[#64748B]">
-              Email digunakan untuk login dan notifikasi
-            </p>
           </div>
+        </CardHeader>
+        <CardContent className="pt-6 space-y-6">
+          <div className="space-y-5">
+            <div className="space-y-2.5">
+              <Label className="text-sm font-semibold text-slate-700">Nama Lengkap</Label>
+              <div className="relative">
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  type="text"
+                  value={profile?.name || ""}
+                  readOnly
+                  className="pl-11 bg-slate-50/80 border-slate-200/80 text-slate-600 cursor-not-allowed h-11 rounded-xl"
+                />
+              </div>
+              <p className="text-xs text-slate-500">Nama diambil dari Google Account Anda</p>
+            </div>
 
-          <Alert className="bg-[#F0FDF4] border-[#BBF7D0] text-[#166534]">
-            <Info className="h-4 w-4" />
-            <AlertDescription>
-              Profil dihubungkan dengan Google Account. Untuk mengubah nama atau email, silakan update di pengaturan Google Account Anda.
-            </AlertDescription>
-          </Alert>
-        </div>
-      </CardContent>
-    </Card>
+            <div className="space-y-2.5">
+              <Label className="text-sm font-semibold text-slate-700">Email</Label>
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  type="email"
+                  value={profile?.email || ""}
+                  readOnly
+                  className="pl-11 bg-slate-50/80 border-slate-200/80 text-slate-600 cursor-not-allowed h-11 rounded-xl"
+                />
+              </div>
+              <p className="text-xs text-slate-500">Email digunakan untuk login dan notifikasi</p>
+            </div>
+
+            <Alert className="bg-gradient-to-r from-blue-50/80 to-indigo-50/80 border-blue-200/50 text-blue-900 rounded-xl">
+              <Info className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-sm text-blue-800/80">
+                Profil terhubung dengan Google Account. Untuk mengubah informasi, silakan update di pengaturan Google Anda.
+              </AlertDescription>
+            </Alert>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }
 
@@ -605,120 +764,144 @@ function LanguageSettings({ initialLanguage }: { initialLanguage: string }) {
 
       await updateLanguagePreference(formData);
       setIsSuccess(true);
-      toast.success("Preferensi bahasa berhasil disimpan!");
+      toast.success("Preferensi bahasa disimpan!", {
+        icon: <CheckCircle2 className="h-4 w-4 text-emerald-500" />,
+      });
       setTimeout(() => setIsSuccess(false), 3000);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Gagal menyimpan preferensi bahasa");
+      toast.error(error instanceof Error ? error.message : "Gagal menyimpan");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <Card className="border-[#E2E8F0]">
-      <CardHeader>
-        <CardTitle className="text-lg font-semibold text-[#0F172A] flex items-center gap-2">
-          <Globe className="h-5 w-5 text-[#4F46E5]" />
-          Preferensi Bahasa
-        </CardTitle>
-        <CardDescription>
-          Pilih bahasa default untuk PRD yang dihasilkan
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="space-y-4">
-          <div
-            className={`flex items-center justify-between p-4 rounded-lg border cursor-pointer transition-colors ${
-              language === "id"
-                ? "border-[#4F46E5] bg-[#EEF2FF]"
-                : "border-[#E2E8F0] bg-white hover:border-[#4F46E5]/50"
-            }`}
-            onClick={() => setLanguage("id")}
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">🇮🇩</span>
-              <div>
-                <p className="font-medium text-[#0F172A]">Bahasa Indonesia</p>
-                <p className="text-sm text-[#64748B]">Default untuk PRD</p>
-              </div>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <Card className="border-slate-200/80 shadow-lg shadow-slate-200/50 bg-white/90 backdrop-blur-sm overflow-hidden">
+        <CardHeader className="pb-6 border-b border-slate-100">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-200/50">
+              <Globe className="h-6 w-6 text-amber-600" />
             </div>
-            <div
-              className={`h-4 w-4 rounded-full border-2 ${
-                language === "id"
-                  ? "border-[#4F46E5] bg-[#4F46E5]"
-                  : "border-[#CBD5E1]"
-              }`}
+            <div>
+              <CardTitle className="text-xl font-semibold text-slate-900">
+                Preferensi Bahasa
+              </CardTitle>
+              <CardDescription className="text-sm text-slate-500 mt-1">
+                Pilih bahasa default untuk PRD
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-6 space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <motion.button
+              type="button"
+              onClick={() => setLanguage("id")}
+              whileHover={{ scale: 1.01, y: -2 }}
+              whileTap={{ scale: 0.99 }}
+              className={`relative p-5 rounded-xl border text-left transition-all duration-300 group
+                ${language === "id"
+                  ? "border-indigo-400 bg-gradient-to-br from-indigo-50/80 to-violet-50/50 shadow-lg shadow-indigo-500/10 ring-1 ring-indigo-500/20"
+                  : "bg-slate-50/80 border-slate-200/80 hover:border-indigo-300/50 hover:bg-white hover:shadow-md"
+                }`}
             >
-              {language === "id" && (
-                <div className="h-full w-full flex items-center justify-center">
-                  <div className="h-1.5 w-1.5 rounded-full bg-white" />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <span className="text-4xl">🇮🇩</span>
+                  <div>
+                    <p className={`font-semibold text-sm ${language === "id" ? "text-slate-900" : "text-slate-800"}`}>
+                      Bahasa Indonesia
+                    </p>
+                    <p className={`text-xs mt-0.5 ${language === "id" ? "text-indigo-700/70" : "text-slate-500"}`}>
+                      Default untuk PRD
+                    </p>
+                  </div>
                 </div>
-              )}
-            </div>
-          </div>
-
-          <div
-            className={`flex items-center justify-between p-4 rounded-lg border cursor-pointer transition-colors ${
-              language === "en"
-                ? "border-[#4F46E5] bg-[#EEF2FF]"
-                : "border-[#E2E8F0] bg-white hover:border-[#4F46E5]/50"
-            }`}
-            onClick={() => setLanguage("en")}
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">🇬🇧</span>
-              <div>
-                <p className="font-medium text-[#0F172A]">English</p>
-                <p className="text-sm text-[#64748B]">English language PRD</p>
+                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all
+                  ${language === "id" 
+                    ? "border-indigo-500 bg-indigo-500" 
+                    : "border-slate-300 bg-white"}`}
+                >
+                  {language === "id" && <Check className="h-3.5 w-3.5 text-white" />}
+                </div>
               </div>
-            </div>
-            <div
-              className={`h-4 w-4 rounded-full border-2 ${
-                language === "en"
-                  ? "border-[#4F46E5] bg-[#4F46E5]"
-                  : "border-[#CBD5E1]"
-              }`}
+            </motion.button>
+
+            <motion.button
+              type="button"
+              onClick={() => setLanguage("en")}
+              whileHover={{ scale: 1.01, y: -2 }}
+              whileTap={{ scale: 0.99 }}
+              className={`relative p-5 rounded-xl border text-left transition-all duration-300 group
+                ${language === "en"
+                  ? "border-indigo-400 bg-gradient-to-br from-indigo-50/80 to-violet-50/50 shadow-lg shadow-indigo-500/10 ring-1 ring-indigo-500/20"
+                  : "bg-slate-50/80 border-slate-200/80 hover:border-indigo-300/50 hover:bg-white hover:shadow-md"
+                }`}
             >
-              {language === "en" && (
-                <div className="h-full w-full flex items-center justify-center">
-                  <div className="h-1.5 w-1.5 rounded-full bg-white" />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <span className="text-4xl">🇬🇧</span>
+                  <div>
+                    <p className={`font-semibold text-sm ${language === "en" ? "text-slate-900" : "text-slate-800"}`}>
+                      English
+                    </p>
+                    <p className={`text-xs mt-0.5 ${language === "en" ? "text-indigo-700/70" : "text-slate-500"}`}>
+                      English PRD output
+                    </p>
+                  </div>
                 </div>
-              )}
-            </div>
+                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all
+                  ${language === "en" 
+                    ? "border-indigo-500 bg-indigo-500" 
+                    : "border-slate-300 bg-white"}`}
+                >
+                  {language === "en" && <Check className="h-3.5 w-3.5 text-white" />}
+                </div>
+              </div>
+            </motion.button>
           </div>
-        </div>
 
-        <Separator className="bg-[#E2E8F0]" />
-
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-[#64748B]">
-            Bahasa yang dipilih akan menjadi default untuk semua PRD baru
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-6 border-t border-slate-200/80 gap-4">
+            <p className="text-sm text-slate-500">
+              Bahasa yang dipilih akan menjadi default untuk semua PRD baru
+            </p>
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Button
+                onClick={handleSave}
+                className={`shadow-lg transition-all h-11 px-6 rounded-xl font-medium ${
+                  isSuccess 
+                    ? "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/25" 
+                    : "bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 shadow-indigo-500/25"
+                } text-white`}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Menyimpan...
+                  </>
+                ) : isSuccess ? (
+                  <>
+                    <Check className="h-4 w-4 mr-2" />
+                    Tersimpan
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    Simpan
+                  </>
+                )}
+              </Button>
+            </motion.div>
           </div>
-          <Button
-            onClick={handleSave}
-            className="bg-[#4F46E5] hover:bg-[#4338CA] text-white"
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Menyimpan...
-              </>
-            ) : isSuccess ? (
-              <>
-                <Check className="h-4 w-4 mr-2" />
-                Tersimpan
-              </>
-            ) : (
-              <>
-                <Save className="h-4 w-4 mr-2" />
-                Simpan
-              </>
-            )}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }
 
@@ -748,101 +931,147 @@ function NotificationSettings({
 
       await updateNotificationPreferences(formData);
       setIsSuccess(true);
-      toast.success("Preferensi notifikasi berhasil disimpan!");
+      toast.success("Preferensi notifikasi disimpan!", {
+        icon: <CheckCircle2 className="h-4 w-4 text-emerald-500" />,
+      });
       setTimeout(() => setIsSuccess(false), 3000);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Gagal menyimpan preferensi notifikasi");
+      toast.error(error instanceof Error ? error.message : "Gagal menyimpan");
     } finally {
       setIsLoading(false);
     }
   };
 
+  const notificationItems = [
+    {
+      id: "prd",
+      title: "PRD Generated",
+      description: "Notifikasi saat PRD selesai dihasilkan",
+      checked: prdGenerated,
+      onChange: setPrdGenerated,
+      icon: FileText,
+      color: "text-indigo-600",
+      bgColor: "bg-gradient-to-br from-indigo-500/10 to-violet-500/10",
+      borderColor: "border-indigo-200/50",
+    },
+    {
+      id: "email",
+      title: "Email Updates",
+      description: "Update dan pengumuman penting via email",
+      checked: emailUpdates,
+      onChange: setEmailUpdates,
+      icon: Mail,
+      color: "text-blue-600",
+      bgColor: "bg-gradient-to-br from-blue-500/10 to-indigo-500/10",
+      borderColor: "border-blue-200/50",
+    },
+    {
+      id: "marketing",
+      title: "Marketing & Tips",
+      description: "Tips, trik, dan penawaran spesial",
+      checked: marketing,
+      onChange: setMarketing,
+      icon: Zap,
+      color: "text-amber-600",
+      bgColor: "bg-gradient-to-br from-amber-500/10 to-orange-500/10",
+      borderColor: "border-amber-200/50",
+    },
+  ];
+
   return (
-    <Card className="border-[#E2E8F0]">
-      <CardHeader>
-        <CardTitle className="text-lg font-semibold text-[#0F172A] flex items-center gap-2">
-          <Bell className="h-5 w-5 text-[#4F46E5]" />
-          Preferensi Notifikasi
-        </CardTitle>
-        <CardDescription>
-          Atur notifikasi yang ingin Anda terima
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 rounded-lg border border-[#E2E8F0] bg-white">
-            <div>
-              <p className="font-medium text-[#0F172A]">PRD Generated</p>
-              <p className="text-sm text-[#64748B]">
-                Notifikasi saat PRD selesai dihasilkan
-              </p>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <Card className="border-slate-200/80 shadow-lg shadow-slate-200/50 bg-white/90 backdrop-blur-sm overflow-hidden">
+        <CardHeader className="pb-6 border-b border-slate-100">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500/10 to-pink-500/10 border border-rose-200/50">
+              <Bell className="h-6 w-6 text-rose-600" />
             </div>
-            <Checkbox
-              checked={prdGenerated}
-              onCheckedChange={(checked) => setPrdGenerated(checked as boolean)}
-              className="h-5 w-5"
-            />
-          </div>
-
-          <div className="flex items-center justify-between p-4 rounded-lg border border-[#E2E8F0] bg-white">
             <div>
-              <p className="font-medium text-[#0F172A]">Email Updates</p>
-              <p className="text-sm text-[#64748B]">
-                Update dan pengumuman penting via email
-              </p>
+              <CardTitle className="text-xl font-semibold text-slate-900">
+                Preferensi Notifikasi
+              </CardTitle>
+              <CardDescription className="text-sm text-slate-500 mt-1">
+                Atur notifikasi yang ingin Anda terima
+              </CardDescription>
             </div>
-            <Checkbox
-              checked={emailUpdates}
-              onCheckedChange={(checked) => setEmailUpdates(checked as boolean)}
-              className="h-5 w-5"
-            />
+          </div>
+        </CardHeader>
+        <CardContent className="pt-6 space-y-6">
+          <div className="space-y-3">
+            {notificationItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <motion.div
+                  key={item.id}
+                  whileHover={{ scale: 1.005, y: -1 }}
+                  className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all duration-300
+                    ${item.checked 
+                      ? "border-indigo-300 bg-gradient-to-r from-indigo-50/70 to-violet-50/40 shadow-sm" 
+                      : "border-slate-200/80 bg-slate-50/60 hover:bg-white hover:border-slate-300"}`}
+                  onClick={() => item.onChange(!item.checked)}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={`flex-shrink-0 w-11 h-11 rounded-xl ${item.bgColor} flex items-center justify-center border ${item.borderColor}`}>
+                      <Icon className={`h-5 w-5 ${item.color}`} />
+                    </div>
+                    <div>
+                      <p className={`font-semibold text-sm ${item.checked ? "text-slate-900" : "text-slate-700"}`}>
+                        {item.title}
+                      </p>
+                      <p className="text-xs text-slate-500 mt-0.5">{item.description}</p>
+                    </div>
+                  </div>
+                  <div className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200
+                    ${item.checked 
+                      ? "border-indigo-500 bg-indigo-500" 
+                      : "border-slate-300 bg-white"}`}
+                  >
+                    {item.checked && <Check className="h-3 w-3 text-white" />}
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
 
-          <div className="flex items-center justify-between p-4 rounded-lg border border-[#E2E8F0] bg-white">
-            <div>
-              <p className="font-medium text-[#0F172A]">Marketing</p>
-              <p className="text-sm text-[#64748B]">
-                Tips, trik, dan penawaran spesial
-              </p>
-            </div>
-            <Checkbox
-              checked={marketing}
-              onCheckedChange={(checked) => setMarketing(checked as boolean)}
-              className="h-5 w-5"
-            />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-6 border-t border-slate-200/80 gap-4">
+            <p className="text-sm text-slate-500">
+              Anda dapat mengubah preferensi ini kapan saja
+            </p>
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Button
+                onClick={handleSave}
+                className={`shadow-lg transition-all h-11 px-6 rounded-xl font-medium ${
+                  isSuccess 
+                    ? "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/25" 
+                    : "bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 shadow-indigo-500/25"
+                } text-white`}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Menyimpan...
+                  </>
+                ) : isSuccess ? (
+                  <>
+                    <Check className="h-4 w-4 mr-2" />
+                    Tersimpan
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    Simpan
+                  </>
+                )}
+              </Button>
+            </motion.div>
           </div>
-        </div>
-
-        <Separator className="my-6 bg-[#E2E8F0]" />
-
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-[#64748B]">
-            Anda dapat mengubah preferensi ini kapan saja
-          </div>
-          <Button
-            onClick={handleSave}
-            className="bg-[#4F46E5] hover:bg-[#4338CA] text-white"
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Menyimpan...
-              </>
-            ) : isSuccess ? (
-              <>
-                <Check className="h-4 w-4 mr-2" />
-                Tersimpan
-              </>
-            ) : (
-              <>
-                <Save className="h-4 w-4 mr-2" />
-                Simpan
-              </>
-            )}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }
