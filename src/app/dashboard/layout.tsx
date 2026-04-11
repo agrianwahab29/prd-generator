@@ -5,13 +5,13 @@ import {
   FileText,
   LayoutDashboard,
   Settings,
-  LogOut,
   Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { auth } from "@/lib/auth";
+import { SignOutButton } from "@/components/SignOutButton";
 
 export default async function DashboardLayout({
   children,
@@ -100,21 +100,7 @@ export default async function DashboardLayout({
                 {userEmail}
               </p>
             </div>
-            <form
-              action={async () => {
-                "use server";
-                redirect("/api/auth/sign-out");
-              }}
-            >
-              <Button
-                type="submit"
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-[#64748B] hover:text-[#F43F5E]"
-              >
-                <LogOut className="h-4 w-4" />
-              </Button>
-            </form>
+            <SignOutButton />
           </div>
         </div>
       </aside>
