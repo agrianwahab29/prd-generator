@@ -49,10 +49,42 @@ const generateSchema = z.object({
 type GenerateForm = z.infer<typeof generateSchema>;
 
 const deploymentOptions = [
-  { value: "vercel", label: "Vercel", icon: Cloud, color: "bg-black" },
-  { value: "netlify", label: "Netlify", icon: Globe, color: "bg-[#00C7B7]" },
-  { value: "vps", label: "VPS (Ubuntu)", icon: Server, color: "bg-[#475569]" },
-  { value: "cpanel", label: "cPanel", icon: LayoutTemplate, color: "bg-[#FF6C2C]" },
+  {
+    value: "vercel",
+    label: "Vercel",
+    icon: Cloud,
+    color: "bg-black",
+    description: "Serverless, auto-deploy dari Git",
+    badge: "Popular",
+    badgeColor: "bg-[#F97316] text-white",
+  },
+  {
+    value: "netlify",
+    label: "Netlify",
+    icon: Globe,
+    color: "bg-[#00C7B7]",
+    description: "Static sites & serverless functions",
+    badge: "",
+    badgeColor: "",
+  },
+  {
+    value: "vps",
+    label: "VPS (Ubuntu)",
+    icon: Server,
+    color: "bg-[#475569]",
+    description: "Full control, Docker support",
+    badge: "Advanced",
+    badgeColor: "bg-[#6366F1] text-white",
+  },
+  {
+    value: "cpanel",
+    label: "cPanel",
+    icon: LayoutTemplate,
+    color: "bg-[#FF6C2C]",
+    description: "Shared hosting, PHP/MySQL",
+    badge: "",
+    badgeColor: "",
+  },
 ];
 
 const promptTemplates = [
@@ -271,22 +303,41 @@ export default function GeneratePage() {
                   onValueChange={(value) => setValue("deployment", value)}
                   disabled={isStreaming}
                 >
-                  <SelectTrigger className="border-[#E2E8F0] focus:border-[#4F46E5] focus:ring-[#4F46E5]">
+                  <SelectTrigger className="border-[#E2E8F0] focus:border-[#4F46E5] focus:ring-[#4F46E5] h-auto py-3">
                     <SelectValue placeholder="Pilih environment" />
                   </SelectTrigger>
-                  <SelectContent>
-                    {deploymentOptions.map((option) => (
-                      <SelectItem
-                        key={option.value}
-                        value={option.value}
-                        className="flex items-center gap-2"
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className={`h-2 w-2 rounded-full ${option.color}`} />
-                          {option.label}
-                        </div>
-                      </SelectItem>
-                    ))}
+                  <SelectContent className="min-w-[280px]">
+                    {deploymentOptions.map((option) => {
+                      const IconComponent = option.icon;
+                      return (
+                        <SelectItem
+                          key={option.value}
+                          value={option.value}
+                          className="py-3 px-3"
+                        >
+                          <div className="flex items-start gap-3 w-full">
+                            <div className={`flex-shrink-0 h-10 w-10 rounded-lg ${option.color} flex items-center justify-center`}>
+                              <IconComponent className="h-5 w-5 text-white" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-[#0F172A] text-sm">
+                                  {option.label}
+                                </span>
+                                {option.badge && (
+                                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${option.badgeColor}`}>
+                                    {option.badge}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-[#64748B] mt-0.5">
+                                {option.description}
+                              </p>
+                            </div>
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
                 {errors.deployment && (

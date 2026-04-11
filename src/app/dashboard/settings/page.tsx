@@ -210,6 +210,66 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
     }
   };
 
+  const providerOptions = [
+    {
+      value: "gemini",
+      label: "Google Gemini",
+      description: "Model AI terbaik untuk PRD generation",
+      badge: "Recommended",
+      badgeColor: "bg-[#10B981] text-white",
+      icon: "🤖",
+      iconBg: "bg-[#4285F4]",
+    },
+    {
+      value: "openrouter",
+      label: "OpenRouter",
+      description: "Akses berbagai model AI populer",
+      badge: "",
+      badgeColor: "",
+      icon: "🌐",
+      iconBg: "bg-[#6366F1]",
+    },
+  ];
+
+  const modelOptions = [
+    {
+      value: "minimax/minimax-m2.5:free",
+      label: "MiniMax M2.5",
+      description: "Model gratis, cocok untuk PRD standar",
+      badge: "Free",
+      badgeColor: "bg-[#10B981] text-white",
+      icon: "⚡",
+      iconBg: "bg-[#F97316]",
+    },
+    {
+      value: "google/gemini-2.0-flash-exp:free",
+      label: "Gemini 2.0 Flash",
+      description: "Cepat dan akurat untuk PRD detail",
+      badge: "Free",
+      badgeColor: "bg-[#10B981] text-white",
+      icon: "🔥",
+      iconBg: "bg-[#4285F4]",
+    },
+    {
+      value: "openai/gpt-4o-mini",
+      label: "GPT-4o Mini",
+      description: "Model OpenAI yang efisien",
+      badge: "",
+      badgeColor: "",
+      icon: "🧠",
+      iconBg: "bg-[#10A37F]",
+    },
+    {
+      value: "anthropic/claude-3-haiku",
+      label: "Claude 3 Haiku",
+      description: "Cepat dan hemat token",
+      badge: "",
+      badgeColor: "",
+      icon: "🎯",
+      iconBg: "bg-[#D97757]",
+    },
+  ];
+
   const providerInfo = provider === "gemini"
     ? {
         name: "Google Gemini",
@@ -258,12 +318,38 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
               value={provider}
               onValueChange={(value) => setValue("provider", value)}
             >
-              <SelectTrigger className="border-[#E2E8F0] focus:border-[#4F46E5] focus:ring-[#4F46E5]">
+              <SelectTrigger className="border-[#E2E8F0] focus:border-[#4F46E5] focus:ring-[#4F46E5] h-auto py-3">
                 <SelectValue placeholder="Pilih provider" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="gemini">Google Gemini (Recommended)</SelectItem>
-                <SelectItem value="openrouter">OpenRouter</SelectItem>
+              <SelectContent className="min-w-[300px]">
+                {providerOptions.map((option) => (
+                  <SelectItem
+                    key={option.value}
+                    value={option.value}
+                    className="py-3 px-3"
+                  >
+                    <div className="flex items-start gap-3 w-full">
+                      <div className={`flex-shrink-0 h-10 w-10 rounded-lg ${option.iconBg} flex items-center justify-center text-lg`}>
+                        {option.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-[#0F172A] text-sm">
+                            {option.label}
+                          </span>
+                          {option.badge && (
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${option.badgeColor}`}>
+                              {option.badge}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-[#64748B] mt-0.5">
+                          {option.description}
+                        </p>
+                      </div>
+                    </div>
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             {errors.provider && (
@@ -279,11 +365,38 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
               value={model}
               onValueChange={(value) => setValue("model", value)}
             >
-              <SelectTrigger className="border-[#E2E8F0] focus:border-[#4F46E5] focus:ring-[#4F46E5]">
+              <SelectTrigger className="border-[#E2E8F0] focus:border-[#4F46E5] focus:ring-[#4F46E5] h-auto py-3">
                 <SelectValue placeholder="Pilih model" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="minimax/minimax-m2.5:free">MiniMax M2.5 (Free)</SelectItem>
+              <SelectContent className="min-w-[300px]">
+                {modelOptions.map((option) => (
+                  <SelectItem
+                    key={option.value}
+                    value={option.value}
+                    className="py-3 px-3"
+                  >
+                    <div className="flex items-start gap-3 w-full">
+                      <div className={`flex-shrink-0 h-10 w-10 rounded-lg ${option.iconBg} flex items-center justify-center text-lg`}>
+                        {option.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-[#0F172A] text-sm">
+                            {option.label}
+                          </span>
+                          {option.badge && (
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${option.badgeColor}`}>
+                              {option.badge}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-[#64748B] mt-0.5">
+                          {option.description}
+                        </p>
+                      </div>
+                    </div>
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             {errors.model && (
