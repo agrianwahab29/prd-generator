@@ -39,6 +39,12 @@ import {
   User,
   Mail,
   Info,
+  Bot,
+  Cpu,
+  Zap,
+  Sparkles,
+  Brain,
+  Crosshair,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -216,9 +222,10 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
       label: "Google Gemini",
       description: "Model AI terbaik untuk PRD generation",
       badge: "Recommended",
-      badgeColor: "bg-[#10B981] text-white",
-      icon: "🤖",
-      iconBg: "bg-[#4285F4]",
+      badgeColor: "bg-[#F0FDF4] text-[#166534] border border-[#BBF7D0]",
+      icon: Bot,
+      iconColor: "text-[#4285F4]",
+      iconBg: "bg-[#EEF2FF]",
     },
     {
       value: "openrouter",
@@ -226,8 +233,9 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
       description: "Akses berbagai model AI populer",
       badge: "",
       badgeColor: "",
-      icon: "🌐",
-      iconBg: "bg-[#6366F1]",
+      icon: Globe,
+      iconColor: "text-[#6366F1]",
+      iconBg: "bg-[#EEF2FF]",
     },
   ];
 
@@ -237,18 +245,20 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
       label: "MiniMax M2.5",
       description: "Model gratis, cocok untuk PRD standar",
       badge: "Free",
-      badgeColor: "bg-[#10B981] text-white",
-      icon: "⚡",
-      iconBg: "bg-[#F97316]",
+      badgeColor: "bg-[#F0FDF4] text-[#166534] border border-[#BBF7D0]",
+      icon: Zap,
+      iconColor: "text-[#F59E0B]",
+      iconBg: "bg-[#FFFBEB]",
     },
     {
       value: "google/gemini-2.0-flash-exp:free",
       label: "Gemini 2.0 Flash",
       description: "Cepat dan akurat untuk PRD detail",
       badge: "Free",
-      badgeColor: "bg-[#10B981] text-white",
-      icon: "🔥",
-      iconBg: "bg-[#4285F4]",
+      badgeColor: "bg-[#F0FDF4] text-[#166534] border border-[#BBF7D0]",
+      icon: Sparkles,
+      iconColor: "text-[#4285F4]",
+      iconBg: "bg-[#EEF2FF]",
     },
     {
       value: "openai/gpt-4o-mini",
@@ -256,8 +266,9 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
       description: "Model OpenAI yang efisien",
       badge: "",
       badgeColor: "",
-      icon: "🧠",
-      iconBg: "bg-[#10A37F]",
+      icon: Brain,
+      iconColor: "text-[#10A37F]",
+      iconBg: "bg-[#F0FDF4]",
     },
     {
       value: "anthropic/claude-3-haiku",
@@ -265,8 +276,9 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
       description: "Cepat dan hemat token",
       badge: "",
       badgeColor: "",
-      icon: "🎯",
-      iconBg: "bg-[#D97757]",
+      icon: Crosshair,
+      iconColor: "text-[#D97757]",
+      iconBg: "bg-[#FFF7ED]",
     },
   ];
 
@@ -322,34 +334,37 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
                 <SelectValue placeholder="Pilih provider" />
               </SelectTrigger>
               <SelectContent className="min-w-[300px]">
-                {providerOptions.map((option) => (
-                  <SelectItem
-                    key={option.value}
-                    value={option.value}
-                    className="py-3 px-3"
-                  >
-                    <div className="flex items-start gap-3 w-full">
-                      <div className={`flex-shrink-0 h-10 w-10 rounded-lg ${option.iconBg} flex items-center justify-center text-lg`}>
-                        {option.icon}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-[#0F172A] text-sm">
-                            {option.label}
-                          </span>
-                          {option.badge && (
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${option.badgeColor}`}>
-                              {option.badge}
-                            </span>
-                          )}
+                {providerOptions.map((option) => {
+                  const IconComponent = option.icon;
+                  return (
+                    <SelectItem
+                      key={option.value}
+                      value={option.value}
+                      className="py-2.5 px-2"
+                    >
+                      <div className="flex items-center gap-3 w-full">
+                        <div className={`flex-shrink-0 h-8 w-8 rounded-md ${option.iconBg} flex items-center justify-center`}>
+                          <IconComponent className={`h-4 w-4 ${option.iconColor}`} />
                         </div>
-                        <p className="text-xs text-[#64748B] mt-0.5">
-                          {option.description}
-                        </p>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-[#0F172A] text-sm">
+                              {option.label}
+                            </span>
+                            {option.badge && (
+                              <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ${option.badgeColor}`}>
+                                {option.badge}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-[#64748B] mt-0.5 truncate">
+                            {option.description}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  </SelectItem>
-                ))}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
             {errors.provider && (
@@ -369,34 +384,37 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
                 <SelectValue placeholder="Pilih model" />
               </SelectTrigger>
               <SelectContent className="min-w-[300px]">
-                {modelOptions.map((option) => (
-                  <SelectItem
-                    key={option.value}
-                    value={option.value}
-                    className="py-3 px-3"
-                  >
-                    <div className="flex items-start gap-3 w-full">
-                      <div className={`flex-shrink-0 h-10 w-10 rounded-lg ${option.iconBg} flex items-center justify-center text-lg`}>
-                        {option.icon}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-[#0F172A] text-sm">
-                            {option.label}
-                          </span>
-                          {option.badge && (
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${option.badgeColor}`}>
-                              {option.badge}
-                            </span>
-                          )}
+                {modelOptions.map((option) => {
+                  const IconComponent = option.icon;
+                  return (
+                    <SelectItem
+                      key={option.value}
+                      value={option.value}
+                      className="py-2.5 px-2"
+                    >
+                      <div className="flex items-center gap-3 w-full">
+                        <div className={`flex-shrink-0 h-8 w-8 rounded-md ${option.iconBg} flex items-center justify-center`}>
+                          <IconComponent className={`h-4 w-4 ${option.iconColor}`} />
                         </div>
-                        <p className="text-xs text-[#64748B] mt-0.5">
-                          {option.description}
-                        </p>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-[#0F172A] text-sm">
+                              {option.label}
+                            </span>
+                            {option.badge && (
+                              <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ${option.badgeColor}`}>
+                                {option.badge}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-[#64748B] mt-0.5 truncate">
+                            {option.description}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  </SelectItem>
-                ))}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
             {errors.model && (

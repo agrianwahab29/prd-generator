@@ -37,6 +37,10 @@ import {
   Globe,
   Server,
   LayoutTemplate,
+  ArrowUpToLine,
+  Rocket,
+  HardDrive,
+  PanelsTopLeft,
 } from "lucide-react";
 import { toast } from "sonner";
 import { saveProject } from "@/app/actions/projects";
@@ -52,17 +56,19 @@ const deploymentOptions = [
   {
     value: "vercel",
     label: "Vercel",
-    icon: Cloud,
-    color: "bg-black",
+    icon: ArrowUpToLine,
+    color: "text-[#0F172A]",
+    bgColor: "bg-[#F1F5F9]",
     description: "Serverless, auto-deploy dari Git",
     badge: "Popular",
-    badgeColor: "bg-[#F97316] text-white",
+    badgeColor: "bg-[#EEF2FF] text-[#4F46E5] border border-[#C7D2FE]",
   },
   {
     value: "netlify",
     label: "Netlify",
     icon: Globe,
-    color: "bg-[#00C7B7]",
+    color: "text-[#0F172A]",
+    bgColor: "bg-[#F1F5F9]",
     description: "Static sites & serverless functions",
     badge: "",
     badgeColor: "",
@@ -70,17 +76,19 @@ const deploymentOptions = [
   {
     value: "vps",
     label: "VPS (Ubuntu)",
-    icon: Server,
-    color: "bg-[#475569]",
+    icon: HardDrive,
+    color: "text-[#0F172A]",
+    bgColor: "bg-[#F1F5F9]",
     description: "Full control, Docker support",
     badge: "Advanced",
-    badgeColor: "bg-[#6366F1] text-white",
+    badgeColor: "bg-[#F1F5F9] text-[#6366F1] border border-[#E2E8F0]",
   },
   {
     value: "cpanel",
     label: "cPanel",
-    icon: LayoutTemplate,
-    color: "bg-[#FF6C2C]",
+    icon: PanelsTopLeft,
+    color: "text-[#0F172A]",
+    bgColor: "bg-[#F1F5F9]",
     description: "Shared hosting, PHP/MySQL",
     badge: "",
     badgeColor: "",
@@ -313,11 +321,11 @@ export default function GeneratePage() {
                         <SelectItem
                           key={option.value}
                           value={option.value}
-                          className="py-3 px-3"
+                          className="py-2.5 px-2"
                         >
-                          <div className="flex items-start gap-3 w-full">
-                            <div className={`flex-shrink-0 h-10 w-10 rounded-lg ${option.color} flex items-center justify-center`}>
-                              <IconComponent className="h-5 w-5 text-white" />
+                          <div className="flex items-center gap-3 w-full">
+                            <div className={`flex-shrink-0 h-8 w-8 rounded-md ${option.bgColor} flex items-center justify-center`}>
+                              <IconComponent className={`h-4 w-4 ${option.color}`} />
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
@@ -325,12 +333,12 @@ export default function GeneratePage() {
                                   {option.label}
                                 </span>
                                 {option.badge && (
-                                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${option.badgeColor}`}>
+                                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ${option.badgeColor}`}>
                                     {option.badge}
                                   </span>
                                 )}
                               </div>
-                              <p className="text-xs text-[#64748B] mt-0.5">
+                              <p className="text-xs text-[#64748B] mt-0.5 truncate">
                                 {option.description}
                               </p>
                             </div>
