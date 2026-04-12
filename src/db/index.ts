@@ -18,6 +18,10 @@ export function getDb() {
       max: 1,
       prepare: false,
       ssl: "require",
+      connect_timeout: 10,   // 10 seconds to connect
+      idle_timeout: 20,      // Close idle connections after 20s
+      max_lifetime: 60 * 30,  // Renew connections after 30 min
+      fetch_types: false,     // Skip type fetching for faster startup
     });
     
     _db = drizzle(client, { schema });

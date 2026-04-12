@@ -205,6 +205,11 @@ export function GenerateForm() {
     setError(null);
     setContent("");
 
+    const controller = new AbortController();
+    // 80 second timeout to stay under Vercel's 60s hobby limit (with buffer)
+    // If using Vercel Pro with 300s limit, you can increase this to 290s
+    const timeoutId = setTimeout(() => controller.abort(), 80000);
+
     try {
       const response = await fetch("/api/generate", {
         method: "POST",
@@ -213,11 +218,42 @@ export function GenerateForm() {
           prompt: data.prompt,
           deployment: data.deployment,
         }),
+        signal: controller.signal,
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Gagal menghasilkan PRD");
+        let errorMessage = "Gagal menghasilkan PRD";
+        const contentType = response.headers.get("content-type");
+        
+        try {
+          // Check if response is JSON
+          if (contentType && contentType.includes("application/json")) {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+          } else {
+            // Response is not JSON (e.g., 504 Gateway Timeout from Vercel edge)
+            const textError = await response.text().catch(() => "");
+            console.error("Non-JSON error response:", { status: response.status, text: textError.substring(0, 200) });
+            
+            if (response.status === 504 || textError.toLowerCase().includes("timeout")) {
+              errorMessage = "Server timeout — AI terlalu lama merespons. Ini biasanya terjadi saat server sibuk. Silakan coba lagi dalam 1-2 menit.";
+            } else if (response.status === 502 || response.status === 503) {
+              errorMessage = "Server sedang sibuk atau dalam maintenance. Silakan coba lagi dalam beberapa saat.";
+            } else if (response.status === 524) {
+              errorMessage = "Connection timeout — Server tidak merespons tepat waktu. Silakan coba dengan deskripsi yang lebih singkat.";
+            } else if (textError) {
+              // Try to extract meaningful error from HTML/text response
+              const cleanError = textError.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+              errorMessage = `Server error (${response.status}): ${cleanError.substring(0, 150)}`;
+            } else {
+              errorMessage = `Server error (${response.status}). Silakan coba lagi.`;
+            }
+          }
+        } catch (parseError) {
+          console.error("Failed to parse error response:", parseError);
+          errorMessage = `Server error (${response.status}). Gagal membaca respons dari server.`;
+        }
+        throw new Error(errorMessage);
       }
 
       const reader = response.body?.getReader();
@@ -238,9 +274,16 @@ export function GenerateForm() {
         icon: <CheckCircle2 className="h-4 w-4 text-emerald-500" />,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal menghasilkan PRD. Silakan coba lagi.");
+      let errorMessage = "Gagal menghasilkan PRD. Silakan coba lagi.";
+      if (err instanceof Error && err.name === "AbortError") {
+        errorMessage = "Permintaan timeout. Server terlalu lama merespons, silakan coba lagi.";
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      setError(errorMessage);
       toast.error("Gagal menghasilkan PRD");
     } finally {
+      clearTimeout(timeoutId);
       setIsStreaming(false);
     }
   };

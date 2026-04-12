@@ -12,7 +12,13 @@ import {
   getClientIP,
 } from "@/lib/rate-limit";
 
-export const maxDuration = 60;
+// Increase max duration to 5 minutes (300 seconds) for Vercel Pro
+// For hobby plan, this will be capped at 60 seconds
+export const maxDuration = 300;
+
+// Ensure we use Node.js runtime for better timeout handling
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 const PRD_SYSTEM_PROMPT = `You are a professional Product Manager and technical writer. Your task is to generate a comprehensive Product Requirements Document (PRD) based on the user's description.
 
@@ -82,24 +88,6 @@ export async function POST(req: NextRequest) {
       : `ip:${clientIP}`;
     const limiter = session?.user ? generateLimiterAuthenticated : generateLimiter;
 
-    const rateLimitResult = await limiter.check(rateLimitKey);
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: "Terlalu banyak permintaan. Silakan tunggu beberapa saat.",
-          reset: rateLimitResult.reset,
-        },
-        {
-          status: 429,
-          headers: {
-            "X-RateLimit-Limit": String(rateLimitResult.limit),
-            "X-RateLimit-Remaining": String(rateLimitResult.remaining),
-            "X-RateLimit-Reset": String(rateLimitResult.reset),
-          },
-        }
-      );
-    }
-
     // Parse request body
     const body = await req.json();
     const { prompt, deployment } = body;
@@ -122,17 +110,49 @@ export async function POST(req: NextRequest) {
     let apiKey: string | undefined;
 
     if (session?.user) {
-      try {
-        const settings = await getDb()
-          .select({
-            apiKeyEncrypted: userSettings.apiKeyEncrypted,
-            apiProvider: userSettings.apiProvider,
-            apiModel: userSettings.apiModel,
-          })
-          .from(userSettings)
-          .where(eq(userSettings.userId, session.user.id))
-          .limit(1);
+      // Run rate limit check and settings fetch in parallel
+      // Add 10-second timeout for database query to prevent hanging
+      const dbTimeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Database query timeout")), 10000)
+      );
 
+      const [rateLimitResult, settings] = await Promise.all([
+        limiter.check(rateLimitKey),
+        Promise.race([
+          getDb()
+            .select({
+              apiKeyEncrypted: userSettings.apiKeyEncrypted,
+              apiProvider: userSettings.apiProvider,
+              apiModel: userSettings.apiModel,
+            })
+            .from(userSettings)
+            .where(eq(userSettings.userId, session.user.id))
+            .limit(1),
+          dbTimeoutPromise,
+        ]).catch((dbError) => {
+          console.warn("Failed to fetch user settings:", dbError);
+          return [];
+        }),
+      ]);
+
+      if (!rateLimitResult.success) {
+        return NextResponse.json(
+          {
+            error: "Terlalu banyak permintaan. Silakan tunggu beberapa saat.",
+            reset: rateLimitResult.reset,
+          },
+          {
+            status: 429,
+            headers: {
+              "X-RateLimit-Limit": String(rateLimitResult.limit),
+              "X-RateLimit-Remaining": String(rateLimitResult.remaining),
+              "X-RateLimit-Reset": String(rateLimitResult.reset),
+            },
+          }
+        );
+      }
+
+      try {
         if (settings.length > 0) {
           userSettingsResult = settings[0];
           if (settings[0].apiKeyEncrypted) {
@@ -149,7 +169,26 @@ export async function POST(req: NextRequest) {
           }
         }
       } catch (dbError) {
-        console.warn("Failed to fetch user settings:", dbError);
+        console.warn("Failed to process user settings:", dbError);
+      }
+    } else {
+      // Anonymous user - just check rate limit
+      const rateLimitResult = await limiter.check(rateLimitKey);
+      if (!rateLimitResult.success) {
+        return NextResponse.json(
+          {
+            error: "Terlalu banyak permintaan. Silakan tunggu beberapa saat.",
+            reset: rateLimitResult.reset,
+          },
+          {
+            status: 429,
+            headers: {
+              "X-RateLimit-Limit": String(rateLimitResult.limit),
+              "X-RateLimit-Remaining": String(rateLimitResult.remaining),
+              "X-RateLimit-Reset": String(rateLimitResult.reset),
+            },
+          }
+        );
       }
     }
 
@@ -212,16 +251,46 @@ export async function POST(req: NextRequest) {
 
     const fullPrompt = `Berikut deskripsi aplikasi yang ingin saya buat:\n\n${prompt}\n\nTarget deployment: ${deploymentLabels[deployment] || deployment}\n\nTolong buatkan PRD yang lengkap dan profesional.`;
 
-    // Stream the response
+    // Stream the response with 55s timeout for AI API call
     const result = streamText({
       model: providerConfig.chatModel(model),
       system: PRD_SYSTEM_PROMPT,
       prompt: fullPrompt,
+      abortSignal: AbortSignal.timeout(55000),
     });
 
     return result.toTextStreamResponse();
   } catch (error: unknown) {
     console.error("Generate API error:", error);
+    
+    // Log additional context for debugging
+    console.error("Error context:", {
+      provider,
+      hasUserSettings: !!userSettingsResult,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Handle timeout / abort errors
+    if (error instanceof Error && error.name === "AbortError") {
+      return NextResponse.json(
+        { 
+          error: "Permintaan timeout — AI terlalu lama merespons (melebihi 55 detik). Silakan coba lagi dengan deskripsi yang lebih singkat atau coba dalam beberapa saat.",
+          code: "AI_TIMEOUT"
+        },
+        { status: 504 }
+      );
+    }
+
+    // Handle database timeout specifically
+    if (error instanceof Error && error.message === "Database query timeout") {
+      return NextResponse.json(
+        { 
+          error: "Database timeout — Server database terlalu lama merespons. Silakan coba lagi dalam beberapa saat.",
+          code: "DB_TIMEOUT"
+        },
+        { status: 504 }
+      );
+    }
 
     const message =
       error instanceof Error ? error.message : "Terjadi kesalahan internal";
@@ -230,8 +299,8 @@ export async function POST(req: NextRequest) {
     if (message.includes("401") || message.includes("Unauthorized")) {
       return NextResponse.json(
         {
-          error:
-            "API key Anda tidak valid atau telah mencapai batas kuota. Silakan periksa kembali di Pengaturan.",
+          error: "API key Anda tidak valid atau telah mencapai batas kuota. Silakan periksa kembali di Pengaturan.",
+          code: "AUTH_ERROR"
         },
         { status: 401 }
       );
@@ -246,6 +315,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           error: `Kuota API ${provider === "gemini" ? "Gemini" : "OpenRouter"} telah habis. ${providerHint}`,
+          code: "RATE_LIMIT"
         },
         { status: 429 }
       );
@@ -255,15 +325,18 @@ export async function POST(req: NextRequest) {
     if (message.toLowerCase().includes("credit") || message.toLowerCase().includes("insufficient")) {
       return NextResponse.json(
         {
-          error:
-            "Kredit API key Anda tidak mencukupi. Silakan gunakan model gratis atau tambahkan kredit di pengaturan provider Anda.",
+          error: "Kredit API key Anda tidak mencukupi. Silakan gunakan model gratis atau tambahkan kredit di pengaturan provider Anda.",
+          code: "INSUFFICIENT_CREDIT"
         },
         { status: 402 }
       );
     }
 
     return NextResponse.json(
-      { error: `Gagal menghasilkan PRD: ${message}` },
+      { 
+        error: `Gagal menghasilkan PRD: ${message}`,
+        code: "INTERNAL_ERROR"
+      },
       { status: 500 }
     );
   }
