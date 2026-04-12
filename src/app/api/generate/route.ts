@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { streamText } from "ai";
+import { streamText, generateText } from "ai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { auth } from "@/lib/auth";
 import { getDb } from "@/db";
@@ -237,6 +237,17 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    console.log("API Key check:", { 
+      provider, 
+      hasApiKey: !!apiKey,
+      apiKeyLength: apiKey?.length || 0,
+      envKeys: {
+        gemini: !!process.env.GEMINI_API_KEY,
+        zai: !!process.env.ZAI_API_KEY,
+        openrouter: !!process.env.OPENROUTER_API_KEY,
+      }
+    });
+
     if (!apiKey) {
       const providerName = provider === "gemini" ? "Gemini" : provider === "zai-coding" ? "Z.AI" : "OpenRouter";
       return NextResponse.json(
@@ -311,6 +322,8 @@ export async function POST(req: NextRequest) {
       : 2500; // Gemini: most conservative
 
     // Stream with timeout 2s before Vercel limit (58s)
+    console.log("Starting streamText...", { provider, model, maxTokens });
+    
     const result = streamText({
       model: providerConfig(model),
       system: PRD_SYSTEM_PROMPT,
@@ -324,17 +337,93 @@ export async function POST(req: NextRequest) {
           model,
           finishReason,
           usage,
-          textLength: text.length,
+          textLength: text?.length || 0,
           maxTokens,
           timestamp: new Date().toISOString(),
         });
       },
     });
 
-    return result.toTextStreamResponse({
+    // Debug: Check if textStream is available
+    console.log("streamText result keys:", Object.keys(result));
+    console.log("textStream available:", !!result.textStream);
+
+    // Debug: Check if textStream is available and is async iterable
+    console.log("streamText result keys:", Object.keys(result));
+    console.log("textStream available:", !!result.textStream);
+    console.log("textStream type:", typeof result.textStream);
+    console.log("textStream is async iterable:", !!result.textStream?.[Symbol.asyncIterator]);
+
+    // Use manual ReadableStream for better control and debugging
+    const encoder = new TextEncoder();
+    let chunkCount = 0;
+    let totalChars = 0;
+    let hasReceivedData = false;
+    
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          console.log("Starting stream processing...");
+          
+          // Set up a timeout to detect if no data is received
+          const dataTimeout = setTimeout(() => {
+            if (!hasReceivedData) {
+              console.error("No data received within 10 seconds, aborting stream");
+              controller.error(new Error("STREAM_NO_DATA"));
+            }
+          }, 10000);
+          
+          for await (const chunk of result.textStream) {
+            hasReceivedData = true;
+            clearTimeout(dataTimeout);
+            chunkCount++;
+            totalChars += chunk.length;
+            
+            if (chunkCount <= 5 || chunkCount % 50 === 0) {
+              console.log(`Stream chunk ${chunkCount}: ${chunk.length} chars, total: ${totalChars}`);
+            }
+            
+            controller.enqueue(encoder.encode(chunk));
+          }
+          
+          clearTimeout(dataTimeout);
+          console.log("Stream complete:", { chunkCount, totalChars });
+          controller.close();
+        } catch (streamError) {
+          console.error("Stream processing error:", streamError);
+          
+          // If streaming fails, try non-streaming fallback
+          if (streamError instanceof Error && streamError.message === "STREAM_NO_DATA") {
+            console.log("Attempting non-streaming fallback...");
+            try {
+              const fallbackResult = await generateText({
+                model: providerConfig(model),
+                system: PRD_SYSTEM_PROMPT,
+                prompt: fullPrompt,
+                maxOutputTokens: maxTokens,
+                temperature: 0.7,
+              });
+              
+              console.log("Fallback successful:", { textLength: fallbackResult.text.length });
+              controller.enqueue(encoder.encode(fallbackResult.text));
+              controller.close();
+              return;
+            } catch (fallbackError) {
+              console.error("Fallback also failed:", fallbackError);
+            }
+          }
+          
+          controller.error(streamError);
+        }
+      },
+    });
+
+    return new Response(stream, {
       headers: {
         "Content-Type": "text/plain; charset=utf-8",
         "Cache-Control": "no-cache, no-store, must-revalidate",
+        "X-Provider": provider,
+        "X-Model": model,
       },
     });
   } catch (error: unknown) {
