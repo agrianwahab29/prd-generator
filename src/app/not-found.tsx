@@ -6,8 +6,8 @@ import { FileText, Home, ArrowLeft } from "lucide-react";
 
 export default function NotFoundPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#EEF2FF] to-white flex items-center justify-center p-4">
-      <div className="max-w-md w-full text-center">
+    <div className="min-h-screen bg-gradient-to-b from-[#EEF2FF] to-white flex items-center justify-center p-4 animate-fade-in">
+      <div className="max-w-md w-full text-center animate-slide-up">
         {/* Logo */}
         <Link href="/" className="inline-flex items-center gap-2 mb-8">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#4F46E5] shadow-lg">

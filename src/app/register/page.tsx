@@ -28,8 +28,8 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#EEF2FF] to-white flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-gradient-to-b from-[#EEF2FF] to-white flex items-center justify-center p-4 animate-fade-in">
+      <div className="w-full max-w-md animate-slide-up">
         {/* Logo */}
         <div className="mb-8 text-center">
           <Link href="/" className="inline-flex items-center gap-2">
@@ -131,19 +131,19 @@ export default function RegisterPage() {
 
         {/* Features */}
         <div className="mt-8 grid grid-cols-3 gap-4 text-center">
-          <div className="flex flex-col items-center gap-2">
+          <div className="flex flex-col items-center gap-2 animate-fade-in stagger-1">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#ECFDF5]">
               <Check className="h-5 w-5 text-[#10B981]" />
             </div>
             <span className="text-xs text-[#64748B]">Free tier</span>
           </div>
-          <div className="flex flex-col items-center gap-2">
+          <div className="flex flex-col items-center gap-2 animate-fade-in stagger-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#ECFDF5]">
               <Check className="h-5 w-5 text-[#10B981]" />
             </div>
             <span className="text-xs text-[#64748B]">Tanpa kartu kredit</span>
           </div>
-          <div className="flex flex-col items-center gap-2">
+          <div className="flex flex-col items-center gap-2 animate-fade-in stagger-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#ECFDF5]">
               <Check className="h-5 w-5 text-[#10B981]" />
             </div>

@@ -50,7 +50,7 @@ export default function LandingPage() {
       <section className="relative overflow-hidden px-4 py-20 md:py-32">
         <div className="container mx-auto max-w-6xl">
           <div className="grid gap-12 lg:grid-cols-2 lg:gap-8 items-center">
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-6 animate-slide-up">
               <Badge className="w-fit bg-[#EEF2FF] text-[#4F46E5] hover:bg-[#E0E7FF]">
                 <Sparkles className="mr-1 h-3 w-3" />
                 Powered by AI
@@ -94,7 +94,7 @@ export default function LandingPage() {
                 </div>
               </div>
             </div>
-            <div className="relative">
+            <div className="relative animate-slide-up stagger-2">
               <Card className="border-[#E2E8F0] shadow-xl overflow-hidden">
                 <CardContent className="p-6">
                   <div className="space-y-4">
@@ -137,36 +137,48 @@ export default function LandingPage() {
             </p>
           </div>
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            <FeatureCard
-              icon={<Zap className="h-6 w-6 text-[#4F46E5]" />}
-              title="Generasi Cepat"
-              description="Hasilkan PRD lengkap dalam hitungan menit dengan AI yang powerful."
-            />
-            <FeatureCard
-              icon={<Globe className="h-6 w-6 text-[#4F46E5]" />}
-              title="Multibahasa"
-              description="Dukungan penuh untuk Bahasa Indonesia dan Inggris."
-            />
-            <FeatureCard
-              icon={<Download className="h-6 w-6 text-[#4F46E5]" />}
-              title="Export PDF"
-              description="Unduh PRD dalam format PDF siap presentasi ke stakeholder."
-            />
-            <FeatureCard
-              icon={<FileText className="h-6 w-6 text-[#4F46E5]" />}
-              title="Template Siap Pakai"
-              description="Berbagai template PRD untuk berbagai jenis proyek."
-            />
-            <FeatureCard
-              icon={<Sparkles className="h-6 w-6 text-[#4F46E5]" />}
-              title="AI Streaming"
-              description="Lihat hasil generasi secara real-time saat AI bekerja."
-            />
-            <FeatureCard
-              icon={<Check className="h-6 w-6 text-[#4F46E5]" />}
-              title="Deployment Ready"
-              description="PRD yang dihasilkan siap untuk berbagai platform deployment."
-            />
+            <div className="animate-slide-up-subtle stagger-1">
+              <FeatureCard
+                icon={<Zap className="h-6 w-6 text-[#4F46E5]" />}
+                title="Generasi Cepat"
+                description="Hasilkan PRD lengkap dalam hitungan menit dengan AI yang powerful."
+              />
+            </div>
+            <div className="animate-slide-up-subtle stagger-2">
+              <FeatureCard
+                icon={<Globe className="h-6 w-6 text-[#4F46E5]" />}
+                title="Multibahasa"
+                description="Dukungan penuh untuk Bahasa Indonesia dan Inggris."
+              />
+            </div>
+            <div className="animate-slide-up-subtle stagger-3">
+              <FeatureCard
+                icon={<Download className="h-6 w-6 text-[#4F46E5]" />}
+                title="Export PDF"
+                description="Unduh PRD dalam format PDF siap presentasi ke stakeholder."
+              />
+            </div>
+            <div className="animate-slide-up-subtle stagger-4">
+              <FeatureCard
+                icon={<FileText className="h-6 w-6 text-[#4F46E5]" />}
+                title="Template Siap Pakai"
+                description="Berbagai template PRD untuk berbagai jenis proyek."
+              />
+            </div>
+            <div className="animate-slide-up-subtle stagger-5">
+              <FeatureCard
+                icon={<Sparkles className="h-6 w-6 text-[#4F46E5]" />}
+                title="AI Streaming"
+                description="Lihat hasil generasi secara real-time saat AI bekerja."
+              />
+            </div>
+            <div className="animate-slide-up-subtle stagger-6">
+              <FeatureCard
+                icon={<Check className="h-6 w-6 text-[#4F46E5]" />}
+                title="Deployment Ready"
+                description="PRD yang dihasilkan siap untuk berbagai platform deployment."
+              />
+            </div>
           </div>
         </div>
       </section>
@@ -183,21 +195,27 @@ export default function LandingPage() {
             </p>
           </div>
           <div className="grid gap-8 md:grid-cols-3">
-            <StepCard
-              number="1"
-              title="Deskripsikan Ide"
-              description="Jelaskan konsep aplikasi Anda dalam beberapa kalimat."
-            />
-            <StepCard
-              number="2"
-              title="Pilih Target"
-              description="Pilih platform deployment yang Anda inginkan."
-            />
-            <StepCard
-              number="3"
-              title="Dapatkan PRD"
-              description="AI akan menghasilkan dokumen spesifikasi lengkap."
-            />
+            <div className="animate-slide-up-subtle stagger-1">
+              <StepCard
+                number="1"
+                title="Deskripsikan Ide"
+                description="Jelaskan konsep aplikasi Anda dalam beberapa kalimat."
+              />
+            </div>
+            <div className="animate-slide-up-subtle stagger-2">
+              <StepCard
+                number="2"
+                title="Pilih Target"
+                description="Pilih platform deployment yang Anda inginkan."
+              />
+            </div>
+            <div className="animate-slide-up-subtle stagger-3">
+              <StepCard
+                number="3"
+                title="Dapatkan PRD"
+                description="AI akan menghasilkan dokumen spesifikasi lengkap."
+              />
+            </div>
           </div>
         </div>
       </section>
@@ -260,7 +278,7 @@ function FeatureCard({
   description: string;
 }) {
   return (
-    <Card className="border-[#E2E8F0] hover:shadow-lg transition-all duration-200 hover:-translate-y-1">
+    <Card className="border-[#E2E8F0] card-hover">
       <CardContent className="p-6">
         <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-[#EEF2FF]">
           {icon}

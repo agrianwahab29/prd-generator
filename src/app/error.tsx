@@ -18,8 +18,8 @@ export default function ErrorPage({
   }, [error]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#FEF2F2] to-white flex items-center justify-center p-4">
-      <div className="max-w-md w-full text-center">
+    <div className="min-h-screen bg-gradient-to-b from-[#FEF2F2] to-white flex items-center justify-center p-4 animate-fade-in">
+      <div className="max-w-md w-full text-center animate-slide-up">
         {/* Error Icon */}
         <div className="mb-6">
           <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#FEE2E2] mx-auto">

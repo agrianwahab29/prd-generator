@@ -133,7 +133,7 @@ function SidebarContent({
       {/* Mobile overlay */}
       {isMobile && sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden animate-in fade-in duration-200"
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden animate-fade-in"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -159,7 +159,7 @@ function SidebarContent({
             <FileText className="h-5 w-5 text-white" />
           </div>
           {!sidebarCollapsed && (
-            <span className="font-bold text-[#020617] text-sm whitespace-nowrap animate-in fade-in slide-in-from-left-2 duration-200">
+            <span className="font-bold text-[#020617] text-sm whitespace-nowrap">
               AI PRD Generator
             </span>
           )}
@@ -199,9 +199,7 @@ function SidebarContent({
                 <Link href={item.href}>
                   <item.icon className="h-5 w-5 flex-shrink-0" />
                   {!sidebarCollapsed && (
-                    <span className="whitespace-nowrap animate-in fade-in duration-200">
-                      {item.label}
-                    </span>
+                    <span className="whitespace-nowrap">{item.label}</span>
                   )}
                 </Link>
               </Button>
