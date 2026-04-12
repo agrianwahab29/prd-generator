@@ -182,11 +182,13 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
   const provider = watch("provider");
   const model = watch("model");
 
-  const showModelSelection = provider === "openrouter";
+  const showModelSelection = provider === "openrouter" || provider === "zai-coding";
 
   useEffect(() => {
     if (provider === "gemini") {
       setValue("model", "auto");
+    } else if (provider === "zai-coding") {
+      setValue("model", "glm-5.1");
     } else {
       setValue("model", "google/gemma-4-31b-it:free");
     }
@@ -241,6 +243,8 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
             <AlertDescription className="text-sm text-indigo-800/80">
               {provider === "gemini"
                 ? "Google Gemini menyediakan API key gratis dengan limit harian. Model dipilih otomatis berdasarkan ketersediaan kuota."
+                : provider === "zai-coding"
+                ? "Z.AI Coding Plan menggunakan endpoint khusus untuk coding agents dengan model GLM-5.1. Ideal untuk PRD kompleks dengan arsitektur teknis detail."
                 : "OpenRouter menyediakan akses ke berbagai model AI dengan limit harian. Pilih model yang tersedia di bawah."}
             </AlertDescription>
           </Alert>
@@ -252,6 +256,8 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
               <strong className="font-semibold">Perhatian:</strong>{" "}
               {provider === "gemini"
                 ? "API key gratis memiliki batas penggunaan harian. Jika kuota habis, Anda perlu menunggu reset otomatis keesokan hari."
+                : provider === "zai-coding"
+                ? "Z.AI Coding Plan memerlukan API key sendiri. Daftar di z.ai dan buat API key di dashboard untuk mulai menggunakan GLM models."
                 : "Model gratis memiliki limit harian. Jika kuota habis, Anda bisa membuat API key baru atau upgrade ke versi berbayar."}
             </AlertDescription>
           </Alert>
@@ -260,7 +266,7 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
             {/* Provider Selection */}
             <div className="space-y-3">
               <Label className="text-sm font-semibold text-slate-700">AI Provider</Label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <button
                   type="button"
                   onClick={() => setValue("provider", "gemini")}
@@ -331,81 +337,229 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
                     </div>
                   )}
                 </button>
+
+                {/* Z.AI Coding Plan */}
+                <button
+                  type="button"
+                  onClick={() => setValue("provider", "zai-coding")}
+                  className={`relative p-5 rounded-xl border text-left transition-all duration-300 overflow-hidden group tap-scale
+                    ${provider === "zai-coding"
+                      ? "border-indigo-400 bg-gradient-to-br from-indigo-50/80 to-violet-50/50 shadow-lg shadow-indigo-500/10 ring-1 ring-indigo-500/20"
+                      : "bg-slate-50/80 border-slate-200/80 hover:border-indigo-300/50 hover:bg-white hover:shadow-md"
+                    }`}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className={`flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center shadow-sm transition-all duration-300
+                      ${provider === "zai-coding" 
+                        ? "bg-gradient-to-br from-emerald-500 to-teal-600 shadow-emerald-500/25" 
+                        : "bg-emerald-100 group-hover:bg-emerald-200"}`}
+                    >
+                      <Brain className={`h-5 w-5 transition-colors ${provider === "zai-coding" ? "text-white" : "text-emerald-600"}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`font-semibold text-sm ${provider === "zai-coding" ? "text-slate-900" : "text-slate-700"}`}>
+                          Z.AI Coding Plan
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200/50">
+                          Coding
+                        </span>
+                      </div>
+                      <p className={`text-xs leading-relaxed ${provider === "zai-coding" ? "text-indigo-700/70" : "text-slate-500"}`}>
+                        GLM-5.1 & GLM Coding untuk PRD kompleks
+                      </p>
+                    </div>
+                  </div>
+                  {provider === "zai-coding" && (
+                    <div className="absolute top-4 right-4 w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center shadow-lg shadow-indigo-500/30 animate-scale-in">
+                      <Check className="h-3.5 w-3.5 text-white" />
+                    </div>
+                  )}
+                </button>
               </div>
             </div>
 
-            {/* Model Selection - Only for OpenRouter */}
+            {/* Model Selection - Only for OpenRouter & Z.AI */}
             {showModelSelection && (
               <div className="space-y-3 animate-fade-in">
                 <Label className="text-sm font-semibold text-slate-700">Model AI</Label>
                 <div className="grid grid-cols-1 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setValue("model", "google/gemma-4-31b-it:free")}
-                    className={`relative p-4 rounded-xl border text-left transition-all duration-300 tap-scale
-                      ${model === "google/gemma-4-31b-it:free"
-                        ? "border-indigo-400 bg-gradient-to-br from-indigo-50/80 to-violet-50/50 shadow-md ring-1 ring-indigo-500/20"
-                        : "bg-slate-50/60 border-slate-200/80 hover:border-indigo-300/50 hover:bg-white"
-                      }`}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center shadow-sm
-                        ${model === "google/gemma-4-31b-it:free" ? "bg-gradient-to-br from-blue-500 to-blue-600" : "bg-blue-100"}`}
+                  {provider === "zai-coding" ? (
+                    <>
+                      {/* Z.AI Coding Plan Models */}
+                      <button
+                        type="button"
+                        onClick={() => setValue("model", "glm-5.1")}
+                        className={`relative p-4 rounded-xl border text-left transition-all duration-300 tap-scale
+                          ${model === "glm-5.1"
+                            ? "border-indigo-400 bg-gradient-to-br from-indigo-50/80 to-violet-50/50 shadow-md ring-1 ring-indigo-500/20"
+                            : "bg-slate-50/60 border-slate-200/80 hover:border-indigo-300/50 hover:bg-white"
+                          }`}
                       >
-                        <Sparkles className={`h-5 w-5 ${model === "google/gemma-4-31b-it:free" ? "text-white" : "text-blue-600"}`} />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className={`font-semibold text-sm ${model === "google/gemma-4-31b-it:free" ? "text-slate-900" : "text-slate-700"}`}>
-                            Google Gemma 4 31B
-                          </span>
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200/50">
-                            Free
-                          </span>
+                        <div className="flex items-center gap-4">
+                          <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center shadow-sm
+                            ${model === "glm-5.1" ? "bg-gradient-to-br from-emerald-500 to-teal-600" : "bg-emerald-100"}`}
+                          >
+                            <Brain className={`h-5 w-5 ${model === "glm-5.1" ? "text-white" : "text-emerald-600"}`} />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className={`font-semibold text-sm ${model === "glm-5.1" ? "text-slate-900" : "text-slate-700"}`}>
+                                GLM-5.1
+                              </span>
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200/50">
+                                Recommended
+                              </span>
+                            </div>
+                            <p className={`text-xs mt-0.5 ${model === "glm-5.1" ? "text-indigo-700/70" : "text-slate-500"}`}>
+                              Flagship model terbaru untuk coding & reasoning kompleks. 128K context.
+                            </p>
+                          </div>
+                          {model === "glm-5.1" && (
+                            <Check className="h-5 w-5 text-indigo-500" />
+                          )}
                         </div>
-                        <p className={`text-xs mt-0.5 ${model === "google/gemma-4-31b-it:free" ? "text-indigo-700/70" : "text-slate-500"}`}>
-                          Model gratis dengan performa tinggi untuk PRD
-                        </p>
-                      </div>
-                      {model === "google/gemma-4-31b-it:free" && (
-                        <Check className="h-5 w-5 text-indigo-500" />
-                      )}
-                    </div>
-                  </button>
+                      </button>
 
-                  <button
-                    type="button"
-                    onClick={() => setValue("model", "openai/gpt-oss-120b:free")}
-                    className={`relative p-4 rounded-xl border text-left transition-all duration-300 tap-scale
-                      ${model === "openai/gpt-oss-120b:free"
-                        ? "border-indigo-400 bg-gradient-to-br from-indigo-50/80 to-violet-50/50 shadow-md ring-1 ring-indigo-500/20"
-                        : "bg-slate-50/60 border-slate-200/80 hover:border-indigo-300/50 hover:bg-white"
-                      }`}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center shadow-sm
-                        ${model === "openai/gpt-oss-120b:free" ? "bg-gradient-to-br from-emerald-500 to-emerald-600" : "bg-emerald-100"}`}
+                      <button
+                        type="button"
+                        onClick={() => setValue("model", "glm-5-turbo")}
+                        className={`relative p-4 rounded-xl border text-left transition-all duration-300 tap-scale
+                          ${model === "glm-5-turbo"
+                            ? "border-indigo-400 bg-gradient-to-br from-indigo-50/80 to-violet-50/50 shadow-md ring-1 ring-indigo-500/20"
+                            : "bg-slate-50/60 border-slate-200/80 hover:border-indigo-300/50 hover:bg-white"
+                          }`}
                       >
-                        <Brain className={`h-5 w-5 ${model === "openai/gpt-oss-120b:free" ? "text-white" : "text-emerald-600"}`} />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className={`font-semibold text-sm ${model === "openai/gpt-oss-120b:free" ? "text-slate-900" : "text-slate-700"}`}>
-                            OpenAI GPT-OSS 120B
-                          </span>
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200/50">
-                            Free
-                          </span>
+                        <div className="flex items-center gap-4">
+                          <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center shadow-sm
+                            ${model === "glm-5-turbo" ? "bg-gradient-to-br from-teal-500 to-cyan-600" : "bg-teal-100"}`}
+                          >
+                            <Zap className={`h-5 w-5 ${model === "glm-5-turbo" ? "text-white" : "text-teal-600"}`} />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className={`font-semibold text-sm ${model === "glm-5-turbo" ? "text-slate-900" : "text-slate-700"}`}>
+                                GLM-5-Turbo
+                              </span>
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-teal-100 text-teal-700 border border-teal-200/50">
+                                Fast
+                              </span>
+                            </div>
+                            <p className={`text-xs mt-0.5 ${model === "glm-5-turbo" ? "text-indigo-700/70" : "text-slate-500"}`}>
+                              Versi cepat dari GLM-5 untuk respons lebih cepat dengan kualitas tinggi.
+                            </p>
+                          </div>
+                          {model === "glm-5-turbo" && (
+                            <Check className="h-5 w-5 text-indigo-500" />
+                          )}
                         </div>
-                        <p className={`text-xs mt-0.5 ${model === "openai/gpt-oss-120b:free" ? "text-indigo-700/70" : "text-slate-500"}`}>
-                          Model open-source gratis dari OpenAI
-                        </p>
-                      </div>
-                      {model === "openai/gpt-oss-120b:free" && (
-                        <Check className="h-5 w-5 text-indigo-500" />
-                      )}
-                    </div>
-                  </button>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setValue("model", "glm-4-32b-0414-128k")}
+                        className={`relative p-4 rounded-xl border text-left transition-all duration-300 tap-scale
+                          ${model === "glm-4-32b-0414-128k"
+                            ? "border-indigo-400 bg-gradient-to-br from-indigo-50/80 to-violet-50/50 shadow-md ring-1 ring-indigo-500/20"
+                            : "bg-slate-50/60 border-slate-200/80 hover:border-indigo-300/50 hover:bg-white"
+                          }`}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center shadow-sm
+                            ${model === "glm-4-32b-0414-128k" ? "bg-gradient-to-br from-blue-500 to-indigo-600" : "bg-blue-100"}`}
+                          >
+                            <Cpu className={`h-5 w-5 ${model === "glm-4-32b-0414-128k" ? "text-white" : "text-blue-600"}`} />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className={`font-semibold text-sm ${model === "glm-4-32b-0414-128k" ? "text-slate-900" : "text-slate-700"}`}>
+                                GLM-4-32B-0414-128K
+                              </span>
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-100 text-blue-700 border border-blue-200/50">
+                                128K Context
+                              </span>
+                            </div>
+                            <p className={`text-xs mt-0.5 ${model === "glm-4-32b-0414-128k" ? "text-indigo-700/70" : "text-slate-500"}`}>
+                              Model 32B parameter dengan context window 128K untuk PRD sangat panjang.
+                            </p>
+                          </div>
+                          {model === "glm-4-32b-0414-128k" && (
+                            <Check className="h-5 w-5 text-indigo-500" />
+                          )}
+                        </div>
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setValue("model", "google/gemma-4-31b-it:free")}
+                        className={`relative p-4 rounded-xl border text-left transition-all duration-300 tap-scale
+                          ${model === "google/gemma-4-31b-it:free"
+                            ? "border-indigo-400 bg-gradient-to-br from-indigo-50/80 to-violet-50/50 shadow-md ring-1 ring-indigo-500/20"
+                            : "bg-slate-50/60 border-slate-200/80 hover:border-indigo-300/50 hover:bg-white"
+                          }`}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center shadow-sm
+                            ${model === "google/gemma-4-31b-it:free" ? "bg-gradient-to-br from-blue-500 to-blue-600" : "bg-blue-100"}`}
+                          >
+                            <Sparkles className={`h-5 w-5 ${model === "google/gemma-4-31b-it:free" ? "text-white" : "text-blue-600"}`} />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className={`font-semibold text-sm ${model === "google/gemma-4-31b-it:free" ? "text-slate-900" : "text-slate-700"}`}>
+                                Google Gemma 4 31B
+                              </span>
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200/50">
+                                Free
+                              </span>
+                            </div>
+                            <p className={`text-xs mt-0.5 ${model === "google/gemma-4-31b-it:free" ? "text-indigo-700/70" : "text-slate-500"}`}>
+                              Model gratis dengan performa tinggi untuk PRD
+                            </p>
+                          </div>
+                          {model === "google/gemma-4-31b-it:free" && (
+                            <Check className="h-5 w-5 text-indigo-500" />
+                          )}
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setValue("model", "openai/gpt-oss-120b:free")}
+                        className={`relative p-4 rounded-xl border text-left transition-all duration-300 tap-scale
+                          ${model === "openai/gpt-oss-120b:free"
+                            ? "border-indigo-400 bg-gradient-to-br from-indigo-50/80 to-violet-50/50 shadow-md ring-1 ring-indigo-500/20"
+                            : "bg-slate-50/60 border-slate-200/80 hover:border-indigo-300/50 hover:bg-white"
+                          }`}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center shadow-sm
+                            ${model === "openai/gpt-oss-120b:free" ? "bg-gradient-to-br from-emerald-500 to-emerald-600" : "bg-emerald-100"}`}
+                          >
+                            <Brain className={`h-5 w-5 ${model === "openai/gpt-oss-120b:free" ? "text-white" : "text-emerald-600"}`} />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className={`font-semibold text-sm ${model === "openai/gpt-oss-120b:free" ? "text-slate-900" : "text-slate-700"}`}>
+                                OpenAI GPT-OSS 120B
+                              </span>
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200/50">
+                                Free
+                              </span>
+                            </div>
+                            <p className={`text-xs mt-0.5 ${model === "openai/gpt-oss-120b:free" ? "text-indigo-700/70" : "text-slate-500"}`}>
+                              Model open-source gratis dari OpenAI
+                            </p>
+                          </div>
+                          {model === "openai/gpt-oss-120b:free" && (
+                            <Check className="h-5 w-5 text-indigo-500" />
+                          )}
+                        </div>
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             )}
@@ -444,11 +598,13 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
                 </div>
                 <div className="flex-1">
                   <Label className="text-sm font-semibold text-slate-800 cursor-pointer">
-                    Gunakan API Key Sendiri
+                    {provider === "zai-coding" ? "Aktifkan API Key Z.AI (Wajib)" : "Gunakan API Key Sendiri"}
                   </Label>
                   <p className="text-xs text-slate-500 mt-0.5">
                     {provider === "gemini" 
                       ? "Masukkan API key Gemini Anda sendiri (opsional)" 
+                      : provider === "zai-coding"
+                      ? "Z.AI Coding Plan memerlukan API key sendiri dari z.ai"
                       : "Masukkan API key OpenRouter Anda sendiri (opsional)"}
                   </p>
                 </div>
@@ -458,13 +614,13 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
               {useCustomKey && (
                 <div className="space-y-3 pl-4 border-l-2 border-indigo-300/50 animate-fade-in">
                   <Label htmlFor="apiKey" className="text-sm font-semibold text-slate-700">
-                    API Key {provider === "gemini" ? "Gemini" : "OpenRouter"}
+                    API Key {provider === "gemini" ? "Gemini" : provider === "zai-coding" ? "Z.AI" : "OpenRouter"}
                   </Label>
                   <div className="relative">
                     <Input
                       id="apiKey"
                       type={showApiKey ? "text" : "password"}
-                      placeholder={provider === "gemini" ? "AIzaSy..." : "sk-or-v1-..."}
+                      placeholder={provider === "gemini" ? "AIzaSy..." : provider === "zai-coding" ? "ZAI-API-KEY-..." : "sk-or-v1-..."}
                       className="pr-12 bg-white border-slate-200/80 focus:border-indigo-400 focus:ring-indigo-400/20 h-11 rounded-xl"
                       {...register("apiKey")}
                     />
@@ -481,12 +637,12 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
                   <p className="text-xs text-slate-500">
                     Dapatkan API key di{" "}
                     <a
-                      href={provider === "gemini" ? "https://aistudio.google.com/app/apikey" : "https://openrouter.ai/keys"}
+                      href={provider === "gemini" ? "https://aistudio.google.com/app/apikey" : provider === "zai-coding" ? "https://z.ai/manage-apikey/apikey-list" : "https://openrouter.ai/keys"}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-indigo-600 hover:text-indigo-700 font-semibold hover:underline"
                     >
-                      {provider === "gemini" ? "Google AI Studio" : "OpenRouter"}
+                      {provider === "gemini" ? "Google AI Studio" : provider === "zai-coding" ? "Z.AI Dashboard" : "OpenRouter"}
                     </a>
                   </p>
                 </div>

@@ -539,16 +539,20 @@ export async function POST(req: NextRequest) {
 
     // Fall back to environment variables based on provider
     if (!apiKey) {
-      apiKey = provider === "gemini"
-        ? process.env.GEMINI_API_KEY
-        : process.env.OPENROUTER_API_KEY;
+      if (provider === "gemini") {
+        apiKey = process.env.GEMINI_API_KEY;
+      } else if (provider === "zai-coding") {
+        apiKey = process.env.ZAI_API_KEY;
+      } else {
+        apiKey = process.env.OPENROUTER_API_KEY;
+      }
     }
 
     if (!apiKey) {
+      const providerName = provider === "gemini" ? "Gemini" : provider === "zai-coding" ? "Z.AI" : "OpenRouter";
       return NextResponse.json(
         {
-          error:
-            "Tidak ada API key tersedia. Silakan tambahkan API key di Pengaturan atau hubungi admin.",
+          error: `Tidak ada API key ${providerName} tersedia. Silakan tambahkan API key di Pengaturan atau hubungi admin.`,
         },
         { status: 500 }
       );
@@ -557,9 +561,14 @@ export async function POST(req: NextRequest) {
     // Create provider based on selected provider
     // For Gemini: model is "auto" (Google picks the best available model)
     // For OpenRouter: use the user's selected free model
+    // For Z.AI Coding: use GLM models via coding endpoint
     let model: string;
     if (provider === "gemini") {
       model = "auto";
+    } else if (provider === "zai-coding") {
+      // Z.AI Coding Plan - use stored model or default to GLM-5.1
+      const storedModel = userSettingsResult?.apiModel;
+      model = storedModel || "glm-5.1";
     } else {
       // OpenRouter - use the stored model or default to gemma
       const storedModel = userSettingsResult?.apiModel;
@@ -572,6 +581,13 @@ export async function POST(req: NextRequest) {
       providerConfig = createOpenAICompatible({
         name: "gemini",
         baseURL: "https://generativelanguage.googleapis.com/v1beta/openai",
+        apiKey: apiKey,
+      });
+    } else if (provider === "zai-coding") {
+      // Use Z.AI Coding Plan endpoint (special endpoint for coding scenarios)
+      providerConfig = createOpenAICompatible({
+        name: "zai-coding",
+        baseURL: "https://api.z.ai/api/coding/paas/v4",
         apiKey: apiKey,
       });
     } else {
@@ -671,20 +687,27 @@ export async function POST(req: NextRequest) {
 
     // Check for rate limit / quota exceeded errors
     if (message.includes("429") || message.includes("rate limit") || message.toLowerCase().includes("quota")) {
-      const providerHint = provider === "gemini"
-        ? "API key Gemini gratis memiliki batas penggunaan harian. Jika habis, Anda bisa membuat API key baru di Google AI Studio atau menunggu reset otomatis keesokan harinya."
-        : "Model gratis OpenRouter memiliki limit harian. Jika habis, Anda bisa membuat API key baru di OpenRouter atau upgrade untuk limit lebih tinggi.";
+      let providerHint: string;
+      if (provider === "gemini") {
+        providerHint = "API key Gemini gratis memiliki batas penggunaan harian. Jika habis, Anda bisa membuat API key baru di Google AI Studio atau menunggu reset otomatis keesokan harinya.";
+      } else if (provider === "zai-coding") {
+        providerHint = "Z.AI Coding Plan memiliki rate limit. Jika terlalu banyak request, tunggu beberapa saat atau cek dashboard Z.AI untuk status kuota Anda.";
+      } else {
+        providerHint = "Model gratis OpenRouter memiliki limit harian. Jika habis, Anda bisa membuat API key baru di OpenRouter atau upgrade untuk limit lebih tinggi.";
+      }
+
+      const providerName = provider === "gemini" ? "Gemini" : provider === "zai-coding" ? "Z.AI" : "OpenRouter";
 
       return NextResponse.json(
         {
-          error: `Kuota API ${provider === "gemini" ? "Gemini" : "OpenRouter"} telah habis. ${providerHint}`,
+          error: `Kuota API ${providerName} telah habis atau rate limit tercapai. ${providerHint}`,
           code: "RATE_LIMIT"
         },
         { status: 429 }
       );
     }
 
-    // Check for insufficient credit (OpenRouter paid models)
+    // Check for insufficient credit (OpenRouter/ZAI paid models)
     if (message.toLowerCase().includes("credit") || message.toLowerCase().includes("insufficient")) {
       return NextResponse.json(
         {
