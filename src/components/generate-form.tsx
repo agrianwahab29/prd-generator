@@ -648,8 +648,34 @@ export function GenerateForm() {
                 {error && (
                   <div className="m-4 animate-fade-in">
                     <Alert className="bg-rose-50 border-rose-200 text-rose-800">
-                      <AlertCircle className="h-4 w-4 text-rose-500" />
-                      <AlertDescription className="text-sm">{error}</AlertDescription>
+                      <AlertCircle className="h-4 w-4 text-rose-500 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <AlertDescription className="text-sm whitespace-pre-line">{error}</AlertDescription>
+                        {/* Show retry button for AI no-response errors */}
+                        {(error.includes("AI tidak merespons") || 
+                          error.includes("gagal merespons") ||
+                          error.includes("Respons dari AI kosong") ||
+                          error.includes("timeout") ||
+                          error.includes("rate limit")) && (
+                          <div className="mt-3 flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                setError(null);
+                                handleSubmit(onSubmit)();
+                              }}
+                              disabled={isStreaming}
+                              className="bg-rose-600 hover:bg-rose-700 text-white h-8 px-3 text-xs"
+                            >
+                              <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                              Coba Lagi
+                            </Button>
+                            <span className="text-xs text-rose-600/70">
+                              Biasanya berhasil pada percobaan kedua
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </Alert>
                   </div>
                 )}

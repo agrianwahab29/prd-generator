@@ -12,6 +12,19 @@ import {
   getClientIP,
 } from "@/lib/rate-limit";
 
+// Fallback model chain for OpenRouter (from most capable to least, all free tier)
+const OPENROUTER_FALLBACK_CHAIN = [
+  "mistralai/mistral-7b-instruct:free",
+  "meta-llama/llama-3.1-8b-instruct:free",
+  "nousresearch/hermes-3-llama-3.1-8b:free",
+];
+
+// Exponential backoff delays in ms: 2s, 4s, 8s
+const RETRY_DELAYS = [2000, 4000, 8000];
+
+// Helper function for delay
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 // Vercel Hobby plan limit: 60 seconds (Pro: 300 seconds)
 // Using 60s to ensure compatibility with all plans
 export const maxDuration = 60;
@@ -19,6 +32,89 @@ export const maxDuration = 60;
 // Ensure we use Node.js runtime for better timeout handling
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+// Health check function for OpenRouter - quick ping to verify availability
+async function checkOpenRouterHealth(apiKey: string): Promise<{ ok: boolean; status?: number; error?: string }> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000); // 5 second timeout for health check
+    
+    const response = await fetch("https://openrouter.ai/api/v1/auth/key", {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      signal: controller.signal,
+    });
+    
+    clearTimeout(timeout);
+    
+    if (response.status === 429) {
+      return { ok: false, status: 429, error: "Rate limited" };
+    }
+    
+    if (response.ok || response.status === 401) {
+      // 401 means key exists but might be invalid - that's ok for health check
+      return { ok: true, status: response.status };
+    }
+    
+    return { ok: false, status: response.status, error: `HTTP ${response.status}` };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Network error" };
+  }
+}
+
+// Get fallback model from chain (returns next model in sequence)
+function getFallbackModel(currentModel: string): string | null {
+  const currentIndex = OPENROUTER_FALLBACK_CHAIN.indexOf(currentModel);
+  if (currentIndex >= 0 && currentIndex < OPENROUTER_FALLBACK_CHAIN.length - 1) {
+    return OPENROUTER_FALLBACK_CHAIN[currentIndex + 1];
+  }
+  // If current model not in chain, start from beginning
+  if (currentIndex === -1) {
+    return OPENROUTER_FALLBACK_CHAIN[0];
+  }
+  return null; // No more fallbacks
+}
+
+// Retry wrapper with exponential backoff for rate limited requests
+async function retryWithBackoff<T>(
+  operation: () => Promise<T>,
+  maxRetries: number = 3,
+  operationName: string = "operation"
+): Promise<T> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      console.log(`[Retry] ${operationName} - Attempt ${attempt + 1}/${maxRetries}`);
+      return await operation();
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      const errorMessage = lastError.message.toLowerCase();
+      
+      // Check if it's a rate limit error
+      const isRateLimit = 
+        errorMessage.includes("429") || 
+        errorMessage.includes("rate limit") ||
+        errorMessage.includes("rate-limited") ||
+        (error as { statusCode?: number })?.statusCode === 429;
+      
+      if (isRateLimit && attempt < maxRetries - 1) {
+        const delayMs = RETRY_DELAYS[attempt] || 8000;
+        console.log(`[Retry] ${operationName} - Rate limited, waiting ${delayMs}ms before retry ${attempt + 2}...`);
+        await delay(delayMs);
+        continue;
+      }
+      
+      // Not a rate limit or last attempt, throw immediately
+      throw error;
+    }
+  }
+  
+  throw lastError || new Error(`${operationName} failed after ${maxRetries} attempts`);
+}
 
 const PRD_SYSTEM_PROMPT = `You are a Senior Product Manager. Generate a DENSE, ACTIONABLE PRD in exactly 3 pages maximum. Every sentence must carry weight — no filler, no repetition, no generic advice.
 
@@ -108,6 +204,7 @@ export async function POST(req: NextRequest) {
   // Declare at function scope so catch block can access it
   let provider = "gemini";
   let userSettingsResult: { apiKeyEncrypted: string | null; apiProvider: string | null; apiModel: string | null } | null = null;
+  let fallbackModels: string[] = []; // Store fallback models for error reporting
 
   try {
     // Get session (optional - allows anonymous generation)
@@ -260,21 +357,41 @@ export async function POST(req: NextRequest) {
 
     // Create provider based on selected provider
     // For Gemini: model is "auto" (Google picks the best available model)
-    // For OpenRouter: use the user's selected free model
+    // For OpenRouter: use the user's selected free model with fallback chain
     // For Z.AI Coding: use GLM models via coding endpoint
+    
+    // Define model fallback chains for resilience
+    const openRouterModelChain = [
+      userSettingsResult?.apiModel, // User's preferred model
+      "mistralai/mistral-7b-instruct:free", // Fast, stable
+      "meta-llama/llama-3.1-8b-instruct:free", // Reliable backup
+      "nousresearch/hermes-3-llama-3.1-405b:free", // Large model backup
+      "gryphe/mythomax-l2-13b:free", // Final fallback
+    ].filter(m => m && m !== "auto" && !m.includes("gemma-4")) as string[];
+    
     let model: string;
+    let fallbackModels: string[] = [];
+    
     if (provider === "gemini") {
       model = "auto";
     } else if (provider === "zai-coding") {
       // Z.AI Coding Plan - use stored model or default to GLM-5.1
       const storedModel = userSettingsResult?.apiModel;
       model = storedModel || "glm-5.1";
+      fallbackModels = ["glm-4.1", "glm-4-flash"];
     } else {
-      // OpenRouter - use the stored model or default to more stable model
-      // google/gemma-4-31b-it:free often gets rate limited, use mistral or llama instead
-      const storedModel = userSettingsResult?.apiModel;
-      model = storedModel && storedModel !== "auto" ? storedModel : "mistralai/mistral-7b-instruct:free";
+      // OpenRouter - use primary model with fallback chain
+      // Filter out the problematic gemma-4 model that often rate limits
+      fallbackModels = openRouterModelChain.slice(1);
+      model = openRouterModelChain[0] || "mistralai/mistral-7b-instruct:free";
     }
+    
+    console.log("Model selection:", { 
+      provider, 
+      primary: model, 
+      fallbacks: fallbackModels,
+      userModel: userSettingsResult?.apiModel 
+    });
 
     let providerConfig;
     if (provider === "gemini") {
@@ -393,25 +510,63 @@ export async function POST(req: NextRequest) {
         } catch (streamError) {
           console.error("Stream processing error:", streamError);
           
-          // If streaming fails, try non-streaming fallback
+          // If streaming fails, try non-streaming fallback with different models
           if (streamError instanceof Error && streamError.message === "STREAM_NO_DATA") {
-            console.log("Attempting non-streaming fallback...");
-            try {
-              const fallbackResult = await generateText({
-                model: providerConfig(model),
-                system: PRD_SYSTEM_PROMPT,
-                prompt: fullPrompt,
-                maxOutputTokens: maxTokens,
-                temperature: 0.7,
-              });
+            console.log("STREAM_NO_DATA detected - attempting fallback with different models...");
+            
+            // Try fallback models in sequence
+            const modelsToTry = [model, ...fallbackModels];
+            let lastError: unknown;
+            
+            for (let i = 0; i < modelsToTry.length; i++) {
+              const tryModel = modelsToTry[i];
+              console.log(`Fallback attempt ${i + 1}/${modelsToTry.length}: ${tryModel}`);
               
-              console.log("Fallback successful:", { textLength: fallbackResult.text.length });
-              controller.enqueue(encoder.encode(fallbackResult.text));
-              controller.close();
-              return;
-            } catch (fallbackError) {
-              console.error("Fallback also failed:", fallbackError);
+              try {
+                // Add exponential backoff between retries
+                if (i > 0) {
+                  const delay = Math.min(2000 * Math.pow(2, i - 1), 8000); // 2s, 4s, 8s max
+                  console.log(`Waiting ${delay}ms before retry...`);
+                  await new Promise(resolve => setTimeout(resolve, delay));
+                }
+                
+                const fallbackResult = await generateText({
+                  model: providerConfig(tryModel),
+                  system: PRD_SYSTEM_PROMPT,
+                  prompt: fullPrompt,
+                  maxOutputTokens: maxTokens,
+                  temperature: 0.7,
+                  // Add timeout for each attempt
+                  abortSignal: AbortSignal.timeout(30000), // 30s per attempt
+                });
+                
+                if (fallbackResult.text && fallbackResult.text.trim().length > 0) {
+                  console.log(`Fallback successful with model ${tryModel}:`, { 
+                    textLength: fallbackResult.text.length 
+                  });
+                  controller.enqueue(encoder.encode(fallbackResult.text));
+                  controller.close();
+                  return;
+                } else {
+                  console.warn(`Model ${tryModel} returned empty response, trying next...`);
+                }
+              } catch (err) {
+                lastError = err;
+                console.error(`Fallback attempt ${i + 1} failed:`, err);
+                
+                // Check if it's a rate limit - if so, continue to next model
+                const errorMsg = err instanceof Error ? err.message : "";
+                if (errorMsg.includes("429") || errorMsg.includes("rate limit")) {
+                  console.log(`Rate limited on ${tryModel}, will try next model...`);
+                  continue;
+                }
+              }
             }
+            
+            // All fallbacks exhausted
+            console.error("All fallback models exhausted");
+            controller.error(new Error(`STREAM_NO_DATA: Semua model (${modelsToTry.join(", ")}) gagal merespons. ${lastError instanceof Error ? lastError.message : ""}`));
+            return;
           }
           
           controller.error(streamError);
@@ -524,6 +679,28 @@ export async function POST(req: NextRequest) {
           code: "RATE_LIMIT"
         },
         { status: 429 }
+      );
+    }
+
+    // Check for STREAM_NO_DATA - specific handling with actionable advice
+    if (message.includes("STREAM_NO_DATA") || message.includes("Semua model") || message.includes("gagal merespons")) {
+      let streamErrorHint: string;
+      if (provider === "gemini") {
+        streamErrorHint = "Gemini sedang mengalami gangguan atau rate limit. Coba tunggu 30 detik dan coba lagi, atau beralih ke provider OpenRouter di Pengaturan.";
+      } else if (provider === "zai-coding") {
+        streamErrorHint = "Z.AI Coding Plan sedang sibuk. Coba lagi dalam 1-2 menit, atau gunakan model lain di Pengaturan.";
+      } else {
+        streamErrorHint = "Semua model OpenRouter gratis sedang mengalami rate limit tinggi. Ini sering terjadi pada jam sibuk. Saran: (1) Tunggu 1-2 menit dan coba lagi, (2) Tambahkan API key OpenRouter sendiri di Pengaturan untuk limit lebih tinggi, atau (3) Coba provider Gemini.";
+      }
+
+      return NextResponse.json(
+        {
+          error: `AI tidak merespons dalam waktu yang cukup. Sistem telah mencoba ${fallbackModels.length + 1} model berbeda tetapi semuanya gagal. ${streamErrorHint}`,
+          code: "AI_NO_RESPONSE",
+          details: message,
+          suggestion: "Coba lagi dengan menekan tombol 'Generate PRD' sekali lagi. Biasanya berhasil pada percobaan kedua."
+        },
+        { status: 503 }
       );
     }
 
