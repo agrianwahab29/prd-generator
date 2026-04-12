@@ -406,12 +406,20 @@ Before finishing, verify you have covered:
 - [x] Budget section has realistic estimations
 - [x] Risk analysis covers both technical and business
 
-## 🚨 CRITICAL RULES
-1. GENERATE THE ENTIRE DOCUMENT - DO NOT STOP EARLY
-2. Each section must have SUBSTANTIAL content (not just headers)
-3. Use specific numbers, metrics, and examples
-4. Assume enterprise-grade quality standards
-5. End with the signature: *Dokumen ini digenerate oleh AI PRD Generator berdasarkan input pengguna. Versi: 2.0 - Enterprise Grade.*
+## 🚨 CRITICAL RULES - READ CAREFULLY
+1. **COMPLETE ALL 11 SECTIONS WITHOUT EXCEPTION** - Do not skip any section, even if it makes the document long
+2. **DO NOT STOP PREMATURELY** - If you run low on tokens, prioritize completing remaining sections over expanding current ones
+3. **BALANCE DEPTH AND BREADTH** - Each section must be substantive (3-5 bullet points minimum) but avoid excessive verbosity
+4. **USE EFFICIENT WRITING** - Be comprehensive but concise. Use bullet points, tables, and structured formats
+5. **SPECIFIC DATA REQUIRED** - Use real numbers, realistic timelines, and concrete examples
+6. **MUST END WITH SIGNATURE** - Dokumen harus diakhiri dengan: *Dokumen ini digenerate oleh AI PRD Generator berdasarkan input pengguna. Versi: 2.0 - Enterprise Grade.*
+
+## ⚠️ ANTI-TRUNCATION STRATEGY
+- If approaching token limit: Complete ALL sections with minimum viable content rather than expanding some sections fully
+- Prioritize: (1) All 11 sections present > (2) Section depth > (3) Perfect formatting
+- Use abbreviations where appropriate (e.g., "FR-" for Functional Requirement)
+- Tables are more space-efficient than paragraphs
+- Keep examples illustrative but brief
 
 Write in Bahasa Indonesia by default unless the user writes in English.`;
 
@@ -612,26 +620,37 @@ export async function POST(req: NextRequest) {
 
     const fullPrompt = `Berikut deskripsi aplikasi yang ingin saya buat:\n\n${prompt}\n\nTarget deployment: ${deploymentLabels[deployment] || deployment}\n\nTolong buatkan PRD yang lengkap dan profesional.`;
 
+    // Determine max tokens based on provider capabilities
+    // Z.AI and OpenRouter models can handle larger outputs
+    const maxTokens = provider === "zai-coding" 
+      ? 12000  // Z.AI GLM models support larger outputs
+      : provider === "openrouter"
+      ? 10000  // OpenRouter models vary, use conservative limit
+      : 8000;  // Gemini limit
+
     // Stream the response with comprehensive settings
     const result = streamText({
       model: providerConfig.chatModel(model),
       system: PRD_SYSTEM_PROMPT,
       prompt: fullPrompt,
-      maxOutputTokens: 8000, // Generate up to ~6000 words (comprehensive PRD)
-      temperature: 0.7, // Balanced creativity and coherence
-      abortSignal: AbortSignal.timeout(120000), // 2 minutes for AI generation
+      maxOutputTokens: maxTokens,
+      temperature: 0.65, // Slightly lower for more focused output
+      abortSignal: AbortSignal.timeout(180000), // 3 minutes for AI generation
       onFinish({ text, finishReason, usage }) {
         // Log completion details for monitoring
         console.log("PRD Generation Complete:", {
+          provider,
+          model,
           finishReason,
           usage,
           textLength: text.length,
+          maxTokens,
           timestamp: new Date().toISOString(),
         });
         
         // Warn if output was truncated
-        if (finishReason === "length" || text.length > 7900 * 0.8) {
-          console.warn("WARNING: PRD may have been truncated. Consider increasing maxOutputTokens or using a model with larger context window.");
+        if (finishReason === "length" || text.length > (maxTokens - 500)) {
+          console.warn(`WARNING: PRD may have been truncated. Finish reason: ${finishReason}, Length: ${text.length}, Max: ${maxTokens}`);
         }
       },
     });
