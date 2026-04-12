@@ -312,7 +312,7 @@ export async function POST(req: NextRequest) {
 
     // Stream with timeout 2s before Vercel limit (58s)
     const result = streamText({
-      model: providerConfig.chatModel(model),
+      model: providerConfig(model),
       system: PRD_SYSTEM_PROMPT,
       prompt: fullPrompt,
       maxOutputTokens: maxTokens,
@@ -326,12 +326,17 @@ export async function POST(req: NextRequest) {
           usage,
           textLength: text.length,
           maxTokens,
-          duration: Date.now(),
+          timestamp: new Date().toISOString(),
         });
       },
     });
 
-    return result.toTextStreamResponse();
+    return result.toTextStreamResponse({
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+      },
+    });
   } catch (error: unknown) {
     console.error("Generate API error:", error);
     

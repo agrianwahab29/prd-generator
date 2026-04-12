@@ -258,10 +258,13 @@ export function GenerateForm() {
       if (!reader) throw new Error("No response body");
 
       let currentContent = "";
+      let chunkCount = 0;
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        currentContent += decoder.decode(value, { stream: true });
+        const chunk = decoder.decode(value, { stream: true });
+        chunkCount++;
+        currentContent += chunk;
         setContent(currentContent);
       }
       
@@ -271,12 +274,20 @@ export function GenerateForm() {
         currentContent += finalChunk;
       }
       
+      // Debug logging
+      console.log("Stream debug:", {
+        chunkCount,
+        contentLength: currentContent.length,
+        hasContent: !!currentContent.trim(),
+        first100Chars: currentContent.substring(0, 100),
+      });
+      
       // Ensure content is set before marking complete
       setContent(currentContent);
       
       // Check if content is empty (shouldn't happen, but safety check)
       if (!currentContent.trim()) {
-        throw new Error("Respons dari AI kosong. Silakan coba lagi.");
+        throw new Error("Respons dari AI kosong. Silakan coba lagi. Cek console browser untuk detail debug.");
       }
 
       setIsComplete(true);
