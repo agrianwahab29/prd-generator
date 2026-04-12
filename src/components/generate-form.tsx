@@ -202,9 +202,9 @@ export function GenerateForm() {
     setContent("");
 
     const controller = new AbortController();
-    // 150 second timeout (2.5 minutes) for comprehensive PRD generation
-    // This accommodates the AI SDK timeout of 120s plus processing overhead
-    const timeoutId = setTimeout(() => controller.abort(), 150000);
+    // 60 second timeout (Vercel limit) for PRD generation
+    // Backend will timeout at 58s to ensure clean response
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
 
     try {
       const response = await fetch("/api/generate", {
