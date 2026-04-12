@@ -9,7 +9,6 @@ import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -23,10 +22,8 @@ import {
   HardDrive,
   PanelsTopLeft,
   ArrowUpToLine,
-  Wand2,
   FileText,
   Zap,
-  Lightbulb,
   Rocket,
   Code2,
   ShoppingCart,
@@ -36,7 +33,6 @@ import {
   Newspaper,
   ChevronRight,
   CheckCircle2,
-  Play,
   LayoutTemplate,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -117,10 +113,10 @@ type Template = {
 
 const promptTemplates: Template[] = [
   {
-    title: "E-Commerce",
-    description: "Toko online lengkap",
+    title: "E-Commerce Enterprise",
+    description: "Platform e-commerce skala besar",
     icon: ShoppingCart,
-    prompt: "Sistem e-commerce dengan fitur: katalog produk, keranjang belanja, checkout dengan berbagai metode pembayaran (transfer bank, e-wallet, QRIS), manajemen inventori real-time, notifikasi WhatsApp untuk order, dan dashboard admin untuk laporan penjualan harian/bulanan.",
+    prompt: "Sistem e-commerce enterprise dengan fitur lengkap: multi-vendor marketplace, katalog produk dengan filter advanced (kategori, harga, rating, brand), keranjang belanja dengan persistent storage, checkout flow 3-step dengan berbagai metode pembayaran (transfer bank BCA/BRI/BNI/Mandiri, e-wallet GoPay/OVO/DANA/ShopeePay, QRIS, credit card via Midtrans/Xendit), manajemen inventori real-time dengan low-stock alerts, notifikasi WhatsApp otomatis untuk konfirmasi order & pengiriman, dashboard admin analytics dengan grafik penjualan, manajemen user dengan role-based access (admin, vendor, customer), sistem review & rating produk, wishlist/favorites, promo code & voucher system, dan integrasi dengan kurir JNE/J&T/SiCepat untuk tracking otomatis. Target: 10,000+ produk, 1000+ concurrent users.",
     deployment: "vercel",
     color: "bg-blue-500",
     lightColor: "bg-blue-50",
@@ -128,10 +124,10 @@ const promptTemplates: Template[] = [
     textColor: "text-blue-600",
   },
   {
-    title: "LMS Platform",
-    description: "Belajar online dengan video",
+    title: "LMS Enterprise",
+    description: "Platform pembelajaran profesional",
     icon: GraduationCap,
-    prompt: "Platform pembelajaran online untuk kursus programming dengan fitur: upload video materi, quiz interaktif dengan penilaian otomatis, progress tracking untuk siswa, forum diskusi per materi, sertifikat digital setelah menyelesaikan kursus, dan pembayaran untuk kursus premium.",
+    prompt: "Learning Management System (LMS) enterprise untuk ed-tech dengan fitur lengkap: video streaming adaptive quality (HLS), quiz engine dengan 5 tipe soal (multiple choice, essay, matching, fill-in, true-false) dan penilaian otomatis, progress tracking detail dengan persentase completion per chapter, forum diskusi threaded per course, sertifikat digital auto-generate dengan QR verification, pembayaran gateway untuk course premium, subscription plans (monthly/annual), affiliate/referral system, analytics dashboard untuk instruktur (student engagement, completion rates), live webinar integration (Zoom/WebRTC), mobile-responsive PWA, offline content download, push notifications untuk deadline assignments, dan integration dengan LinkedIn untuk auto-share certificates.",
     deployment: "vercel",
     color: "bg-emerald-500",
     lightColor: "bg-emerald-50",
@@ -139,10 +135,10 @@ const promptTemplates: Template[] = [
     textColor: "text-emerald-600",
   },
   {
-    title: "POS System",
-    description: "Kasir & manajemen stok",
+    title: "POS & Inventory",
+    description: "Sistem kasir enterprise",
     icon: Store,
-    prompt: "Sistem Point of Sale (POS) untuk retail dengan fitur: scan barcode produk, multiple metode pembayaran, cetak struk thermal, manajemen stok multi-cabang, laporan penjualan real-time, prediksi stok habis, dan integrasi dengan akuntansi dasar.",
+    prompt: "Point of Sale (POS) & Inventory Management System untuk retail chain dengan fitur: multi-cabang support dengan data isolation, barcode/QR scanning untuk quick checkout, multiple payment methods (cash, card, split payment), cetak struk thermal/EPSON support, manajemen stok real-time dengan FIFO/LIFO methods, auto-reorder saat stok di bawah minimum, supplier management & PO generation, laporan keuangan GAAP-compliant (P&L, balance sheet, cash flow), CRM dasar untuk loyalitas pelanggan, employee management dengan shift tracking, dashboard owner dengan KPI metrics (revenue per store, best-selling products, inventory turnover), data export Excel/PDF, backup otomatis harian, dan API untuk integrasi dengan accounting software (Accurate, Jurnal, QuickBooks).",
     deployment: "vps",
     color: "bg-orange-500",
     lightColor: "bg-orange-50",
@@ -150,10 +146,10 @@ const promptTemplates: Template[] = [
     textColor: "text-orange-600",
   },
   {
-    title: "Booking SaaS",
-    description: "Reservasi untuk jasa",
+    title: "SaaS Booking Pro",
+    description: "Sistem reservasi multi-jasa",
     icon: Calendar,
-    prompt: "Sistem booking online untuk jasa service/konsultasi dengan fitur: kalender availability real-time, pemilihan slot waktu, pembayaran DP atau full, reminder email/SMS otomatis sebelum jadwal, reschedule/cancel booking, dan review rating setelah service selesai.",
+    prompt: "SaaS booking & appointment system untuk service industries (salon, klinik, konsultasi, rental) dengan fitur: kalender berbasi slot availability yang real-time, booking engine dengan conflict prevention, deposit/partial payment atau full payment, automated reminder via WhatsApp/Email (H-1, H-3, jam sebelum), customer self-service portal untuk reschedule/cancel, staff management dengan assignment rules, service catalog dengan pricing tiers, resource management (room/equipment booking), waitlist untuk slot penuh, recurring appointments untuk membership, review & rating system, analytics dashboard (booking trends, no-show rates, revenue per staff), integration dengan Google Calendar, dan white-label capability untuk multi-tenant deployment.",
     deployment: "vercel",
     color: "bg-purple-500",
     lightColor: "bg-purple-50",
@@ -161,10 +157,10 @@ const promptTemplates: Template[] = [
     textColor: "text-purple-600",
   },
   {
-    title: "Blog Platform",
-    description: "CMS dengan newsletter",
+    title: "Headless CMS",
+    description: "CMS modern dengan API",
     icon: Newspaper,
-    prompt: "Platform blogging modern dengan fitur: rich text editor (Notion-like), auto-save draft, SEO optimization otomatis (meta tags, sitemap), newsletter subscription dengan Mailchimp/SendGrid integration, komentar dengan moderasi, dan analytics dasar (page views, popular posts).",
+    prompt: "Headless CMS & Content Platform untuk media company dengan fitur: block-based editor (Notion-style) dengan 15+ block types, content versioning & rollback, multi-language support (i18n), SEO automation (auto-generate meta tags, structured data, sitemap.xml), editorial workflow (draft → review → published), user-generated content dengan moderation queue, newsletter system dengan subscriber management (Mailchimp/SendGrid integration), paywall untuk content premium, analytics integration (GA4, Plausible), API-first architecture dengan GraphQL/REST, CDN integration untuk asset delivery, scheduled publishing, content recommendations dengan AI, comment system dengan threading, dan static site generation untuk performance optimal.",
     deployment: "netlify",
     color: "bg-rose-500",
     lightColor: "bg-rose-50",
@@ -206,9 +202,9 @@ export function GenerateForm() {
     setContent("");
 
     const controller = new AbortController();
-    // 80 second timeout to stay under Vercel's 60s hobby limit (with buffer)
-    // If using Vercel Pro with 300s limit, you can increase this to 290s
-    const timeoutId = setTimeout(() => controller.abort(), 80000);
+    // 150 second timeout (2.5 minutes) for comprehensive PRD generation
+    // This accommodates the AI SDK timeout of 120s plus processing overhead
+    const timeoutId = setTimeout(() => controller.abort(), 150000);
 
     try {
       const response = await fetch("/api/generate", {
@@ -518,13 +514,16 @@ export function GenerateForm() {
                     transition-all duration-300 border-0 btn-hover-lift"
                 >
                   {isStreaming ? (
-                    <div className="flex items-center gap-3">
-                      <div className="flex gap-1">
-                        <span className="w-2 h-2 bg-white/90 rounded-full bounce-dot bounce-dot-1" />
-                        <span className="w-2 h-2 bg-white/90 rounded-full bounce-dot bounce-dot-2" />
-                        <span className="w-2 h-2 bg-white/90 rounded-full bounce-dot bounce-dot-3" />
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="flex items-center gap-2">
+                        <div className="flex gap-1">
+                          <span className="w-2 h-2 bg-white/90 rounded-full bounce-dot bounce-dot-1" />
+                          <span className="w-2 h-2 bg-white/90 rounded-full bounce-dot bounce-dot-2" />
+                          <span className="w-2 h-2 bg-white/90 rounded-full bounce-dot bounce-dot-3" />
+                        </div>
+                        <span className="text-white/90">Menghasilkan PRD Komprehensif...</span>
                       </div>
-                      <span className="text-white/90">AI Sedang Membuat PRD...</span>
+                      <span className="text-xs text-white/60">Ini membutuhkan waktu 1-2 menit untuk dokumen lengkap</span>
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
@@ -565,13 +564,16 @@ export function GenerateForm() {
                 
                 {/* Status Badge */}
                 {isStreaming && (
-                  <span className="px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-medium flex items-center gap-1.5">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-medium flex items-center gap-1.5">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                      </span>
+                      Generating Enterprise PRD
                     </span>
-                    Generating
-                  </span>
+                    <span className="text-[10px] text-slate-400">11 sections • Full technical specs • Complete architecture</span>
+                  </div>
                 )}
                 {isComplete && (
                   <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-medium flex items-center gap-1.5 animate-scale-in">
@@ -667,23 +669,49 @@ export function GenerateForm() {
                         </div>
                       </div>
                       <h3 className="text-lg font-semibold text-slate-800 mb-1">
-                        Siap Membuat PRD?
+                        Siap Membuat PRD Enterprise?
                       </h3>
-                      <p className="text-slate-500 max-w-sm text-sm leading-relaxed">
-                        Masukkan deskripsi proyek Anda, pilih target deployment, dan biarkan AI bekerja.
+                      <p className="text-slate-500 max-w-sm text-sm leading-relaxed mb-4">
+                        Generate dokumen PRD komprehensif dengan 11 section lengkap, spesifikasi teknis detail, arsitektur sistem, timeline development, dan estimasi budget.
                       </p>
-                      <div className="flex items-center gap-5 mt-5 text-xs text-slate-400">
+                      <div className="grid grid-cols-2 gap-3 text-xs text-slate-500 mb-4 w-full max-w-xs">
+                        <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-2 rounded-lg">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                          <span>Product Vision</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-2 rounded-lg">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                          <span>Tech Stack</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-2 rounded-lg">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                          <span>User Personas</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-2 rounded-lg">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                          <span>API Design</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-2 rounded-lg">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                          <span>Security Arch</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-2 rounded-lg">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                          <span>Dev Timeline</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-5 text-xs text-slate-400">
+                        <span className="flex items-center gap-1.5">
+                          <FileText className="h-3.5 w-3.5 text-indigo-500" />
+                          ~15-20 halaman
+                        </span>
                         <span className="flex items-center gap-1.5">
                           <Zap className="h-3.5 w-3.5 text-amber-500" />
-                          Cepat
+                          1-2 menit
                         </span>
                         <span className="flex items-center gap-1.5">
-                          <Check className="h-3.5 w-3.5 text-emerald-500" />
-                          Profesional
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                          <Code2 className="h-3.5 w-3.5 text-indigo-500" />
-                          Lengkap
+                          <Code2 className="h-3.5 w-3.5 text-emerald-500" />
+                          Production-ready
                         </span>
                       </div>
                     </div>
