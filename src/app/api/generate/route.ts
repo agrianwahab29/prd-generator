@@ -205,6 +205,7 @@ export async function POST(req: NextRequest) {
   let provider = "gemini";
   let userSettingsResult: { apiKeyEncrypted: string | null; apiProvider: string | null; apiModel: string | null } | null = null;
   let fallbackModels: string[] = []; // Store fallback models for error reporting
+  let model = ""; // Store model for error reporting
 
   try {
     // Get session (optional - allows anonymous generation)
@@ -375,10 +376,25 @@ export async function POST(req: NextRequest) {
     if (provider === "gemini") {
       model = "auto";
     } else if (provider === "zai-coding") {
-      // Z.AI Coding Plan - use stored model or default to GLM-5.1
+      // Z.AI (ChatGLM) model mapping
+      // Model names need to be mapped to correct API identifiers
+      const zaiModelMap: Record<string, string> = {
+        "glm-5.1": "glm-4-plus", // GLM-5.1 mapped to glm-4-plus (latest stable)
+        "glm-5-turbo": "glm-4-flash", // Turbo mapped to flash model
+        "glm-4-32b-0414-128k": "glm-4-long", // 128k context model
+      };
+      
       const storedModel = userSettingsResult?.apiModel;
-      model = storedModel || "glm-5.1";
-      fallbackModels = ["glm-4.1", "glm-4-flash"];
+      const selectedModel = storedModel || "glm-5.1";
+      model = zaiModelMap[selectedModel] || "glm-4-plus";
+      
+      fallbackModels = ["glm-4-flash", "glm-4"];
+      
+      console.log("Z.AI Model Mapping:", {
+        userSelected: selectedModel,
+        mappedTo: model,
+        availableModels: Object.keys(zaiModelMap),
+      });
     } else {
       // OpenRouter - use primary model with fallback chain
       // Filter out the problematic gemma-4 model that often rate limits
@@ -402,11 +418,22 @@ export async function POST(req: NextRequest) {
         apiKey: apiKey,
       });
     } else if (provider === "zai-coding") {
-      // Use Z.AI Coding Plan endpoint (special endpoint for coding scenarios)
+      // Use Z.AI Coding Plan endpoint 
+      // Note: GLM-5.1 and newer models use the standard API endpoint, not the coding-specific one
       providerConfig = createOpenAICompatible({
-        name: "zai-coding",
-        baseURL: "https://api.z.ai/api/coding/paas/v4",
+        name: "zai",
+        baseURL: "https://open.bigmodel.cn/api/paas/v4", // Standard Z.AI endpoint
         apiKey: apiKey,
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+        },
+      });
+      
+      console.log("Z.AI Provider Config:", {
+        baseURL: "https://open.bigmodel.cn/api/paas/v4",
+        hasApiKey: !!apiKey,
+        apiKeyLength: apiKey?.length || 0,
+        apiKeyPrefix: apiKey?.substring(0, 10) + "...",
       });
     } else {
       // Use OpenRouter
@@ -585,13 +612,33 @@ export async function POST(req: NextRequest) {
   } catch (error: unknown) {
     console.error("Generate API error:", error);
     
+    // Extract detailed error info
+    const errorDetails = error instanceof Error ? {
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+      cause: (error as { cause?: unknown }).cause,
+    } : { message: String(error) };
+    
     // Log additional context for debugging
     console.error("Error context:", {
       provider,
       hasUserSettings: !!userSettingsResult,
       maxDuration,
       timestamp: new Date().toISOString(),
+      errorDetails,
+      // Z.AI specific logging
+      zaiInfo: provider === "zai-coding" ? {
+        apiKeyConfigured: !!userSettingsResult?.apiKeyEncrypted,
+        modelRequested: userSettingsResult?.apiModel,
+        baseURL: "https://open.bigmodel.cn/api/paas/v4",
+      } : null,
     });
+    
+    // Log full error for Z.AI to see raw response
+    if (provider === "zai-coding") {
+      console.error("Z.AI Error Details (Full):", JSON.stringify(error, null, 2));
+    }
 
     // Handle timeout / abort errors
     if (error instanceof Error && error.name === "AbortError") {
@@ -682,23 +729,47 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Check for Z.AI specific errors
+    if (provider === "zai-coding" && (message.includes("401") || message.includes("Unauthorized") || message.includes("invalid api key"))) {
+      return NextResponse.json(
+        {
+          error: "API key Z.AI tidak valid. Silakan periksa kembali API key Anda di Z.AI Dashboard (https://z.ai/manage-apikey/apikey-list). Pastikan:\n1. API key sudah diaktifkan\n2. Tidak ada typo atau karakter ekstra\n3. API key belum expired",
+          code: "ZAI_INVALID_KEY",
+          hint: "Copy API key langsung dari dashboard Z.AI, jangan ketik manual untuk menghindari typo."
+        },
+        { status: 401 }
+      );
+    }
+    
+    // Check for Z.AI model not found errors
+    if (provider === "zai-coding" && (message.includes("model") || message.includes("not found") || message.includes("does not exist"))) {
+      return NextResponse.json(
+        {
+          error: `Model "${model}" tidak ditemukan atau tidak tersedia di Z.AI saat ini. Model GLM-5.1 adalah model terbaru dan mungkin memerlukan waktu untuk propagasi ke semua endpoint. Saran:\n1. Coba pilih model GLM-5-Turbo di Pengaturan\n2. Atau tunggu 5-10 menit dan coba lagi\n3. Pastikan subscription Z.AI Anda aktif (GLM Coding Lite/Pro)`,
+          code: "ZAI_MODEL_NOT_FOUND",
+          hint: "Jika masalah berlanjut, coba gunakan OpenRouter dengan model 'mistralai/mistral-7b-instruct:free' sebagai alternatif."
+        },
+        { status: 404 }
+      );
+    }
+
     // Check for STREAM_NO_DATA - specific handling with actionable advice
     if (message.includes("STREAM_NO_DATA") || message.includes("Semua model") || message.includes("gagal merespons")) {
       let streamErrorHint: string;
       if (provider === "gemini") {
         streamErrorHint = "Gemini sedang mengalami gangguan atau rate limit. Coba tunggu 30 detik dan coba lagi, atau beralih ke provider OpenRouter di Pengaturan.";
       } else if (provider === "zai-coding") {
-        streamErrorHint = "Z.AI Coding Plan sedang sibuk. Coba lagi dalam 1-2 menit, atau gunakan model lain di Pengaturan.";
+        streamErrorHint = `Z.AI tidak merespons. Ini mungkin karena:\n1. Endpoint API sedang maintenance\n2. Model "${model}" tidak tersedia di region Anda\n3. API key memerlukan re-authentication\n\nCoba: (1) Tunggu 1 menit dan coba lagi, (2) Pilih model GLM-5-Turbo, atau (3) Gunakan OpenRouter sementara.`;
       } else {
         streamErrorHint = "Semua model OpenRouter gratis sedang mengalami rate limit tinggi. Ini sering terjadi pada jam sibuk. Saran: (1) Tunggu 1-2 menit dan coba lagi, (2) Tambahkan API key OpenRouter sendiri di Pengaturan untuk limit lebih tinggi, atau (3) Coba provider Gemini.";
       }
 
       return NextResponse.json(
         {
-          error: `AI tidak merespons dalam waktu yang cukup. Sistem telah mencoba ${fallbackModels.length + 1} model berbeda tetapi semuanya gagal. ${streamErrorHint}`,
+          error: `AI tidak merespons dalam waktu yang cukup. ${streamErrorHint}`,
           code: "AI_NO_RESPONSE",
           details: message,
-          suggestion: "Coba lagi dengan menekan tombol 'Generate PRD' sekali lagi. Biasanya berhasil pada percobaan kedua."
+          suggestion: "Coba lagi dengan menekan tombol 'Coba Lagi' di bawah. Biasanya berhasil pada percobaan kedua."
         },
         { status: 503 }
       );
