@@ -264,6 +264,20 @@ export function GenerateForm() {
         currentContent += decoder.decode(value, { stream: true });
         setContent(currentContent);
       }
+      
+      // Flush any remaining buffered data from decoder
+      const finalChunk = decoder.decode();
+      if (finalChunk) {
+        currentContent += finalChunk;
+      }
+      
+      // Ensure content is set before marking complete
+      setContent(currentContent);
+      
+      // Check if content is empty (shouldn't happen, but safety check)
+      if (!currentContent.trim()) {
+        throw new Error("Respons dari AI kosong. Silakan coba lagi.");
+      }
 
       setIsComplete(true);
       toast.success("PRD berhasil dihasilkan!", {
