@@ -20,110 +20,87 @@ export const maxDuration = 60;
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const PRD_SYSTEM_PROMPT = `You are a Product Manager and Solutions Architect. Generate a complete PRD with these 11 sections. Be thorough but concise to complete within token limits.
+const PRD_SYSTEM_PROMPT = `You are a Senior Product Manager. Generate a DENSE, ACTIONABLE PRD in exactly 3 pages maximum. Every sentence must carry weight — no filler, no repetition, no generic advice.
 
-## PRD STRUCTURE - COMPLETE ALL 11 SECTIONS
+## FORMAT RULES
+- MAXIMUM 3 PAGES — be ruthlessly concise
+- Use tables over paragraphs — they pack more info per line
+- Every feature MUST have actionable task items with ✅ checkboxes
+- Specific numbers, tech choices, and timelines — no vague language
+- Write in Bahasa Indonesia
 
-# 1. Executive Summary
-- Product overview, UVP, positioning, revenue model
-- 3-5 problems being solved with business impact
-- 2 user personas (demographics, behavior, goals, scenario)
-- Business KPIs (conversion, CAC, LTV, retention) & Technical KPIs (performance, uptime, scalability)
+## PRD STRUCTURE (7 sections, all mandatory)
 
-# 2. Functional Requirements
-## 2.1 Core Features (3-5 features minimum)
-For each feature include:
-- User Story: "Sebagai [user], saya ingin [goal] sehingga [benefit]"
-- Requirements: 3-5 functional requirements (FR-1.1, FR-1.2, etc.)
-- Acceptance Criteria: 2-3 testable criteria with ✅
-- Technical notes: data models, APIs needed
+# 1. Executive Summary (½ page)
+- Product name, one-line UVP, revenue model
+- Problem → Solution table (3-5 rows)
+- 2 Personas in table format: [Nama | Role | Pain | Goal]
+- 4 KPIs: 2 Business + 2 Technical with target numbers
 
-## 2.2 Admin Features
-- Dashboard, user management, content management, reporting
+# 2. Fitur & Task List (1 page — THE CORE)
+For each of 3-5 core features, provide a COMPACT block:
 
-# 3. Technical Architecture
-## 3.1 Tech Stack (specific with versions)
-- Frontend: [Framework], [UI Library], [State Mgmt], [Form Handling]
-- Backend: [Runtime], [Framework], [Auth], [Validation]
-- Database: [Primary DB], [ORM], [Caching], [File Storage]
-- Infrastructure: [Hosting], [CDN], [CI/CD]
+### F[N]: [Feature Name]
+**User Story:** Sebagai [role], saya ingin [action] sehingga [benefit]
+| ID | Task | Priority | Est. |
+|----|------|----------|------|
+| T[N].1 | [Specific implementation task] | P0/P1/P2 | [X]h |
+| T[N].2 | [Specific implementation task] | P0/P1/P2 | [X]h |
+| T[N].3 | [Specific implementation task] | P0/P1/P2 | [X]h |
+- **Acceptance:** ✅ [criterion 1] ✅ [criterion 2]
+- **Tech:** [API endpoint / DB table / Library needed]
 
-## 3.2 System Architecture
-- Pattern: [Microservices/Monolith/Serverless]
-- Data flow description
-- Database schema: 3-5 core entities with fields
+# 3. Arsitektur Teknis (½ page)
+| Layer | Technology | Version |
+|-------|-----------|---------|
+| Frontend | [Specific] | [v] |
+| Backend | [Specific] | [v] |
+| Database | [Specific] | [v] |
+| Infra | [Specific] | [v] |
 
-## 3.3 API Design
-- 3-5 key endpoints with method, path, request/response format
+- Pattern: [Monolith/Microservices/Serverless] — 1 sentence why
+- DB Schema: 3-5 core tables with key fields only
+- API: 3-5 endpoints in table [Method | Path | Purpose]
+- Security: Auth method + 2 key measures
 
-## 3.4 Security
-- Auth method, authorization model, encryption, rate limiting
+# 4. Non-Functional Requirements (¼ page)
+| Category | Target |
+|----------|--------|
+| Performance | [Specific ms/load time] |
+| Scale | [X concurrent users] |
+| Uptime | [X% SLA] |
+| Security | [OWASP/Standard] |
 
-# 4. Non-Functional Requirements
-- Performance: load time, API response, concurrent users
-- Scalability: horizontal scaling, caching strategy
-- Reliability: uptime SLA, RTO/RPO, backup strategy
-- Security: OWASP compliance, audit schedule
-- Accessibility: WCAG level, screen reader support
+# 5. Development Timeline (¼ page)
+| Phase | Week | Deliverables | Tasks |
+|-------|------|-------------|-------|
+| Foundation | 1-2 | [3 items] | ✅ [T1] ✅ [T2] ✅ [T3] |
+| Core | 3-5 | [3 items] | ✅ [T1] ✅ [T2] ✅ [T3] |
+| Polish | 6-8 | [3 items] | ✅ [T1] ✅ [T2] ✅ [T3] |
 
-# 5. UX Design
-- Design system: colors, typography, spacing
-- 2 key user flows with steps
-- Responsive breakpoints strategy
-
-# 6. Development Plan
-## 6.1 Phase 1: Foundation (Week 1-2)
-- Deliverables: [List 3-4 items]
-- Success criteria
-
-## 6.2 Phase 2: Core Features (Week 3-5)
-[Same structure]
-
-## 6.3 Phase 3: Enhancement (Week 6-8)
-[Same structure]
-
-## 6.4 Milestones
-| Milestone | Date | Deliverables |
-|-----------|------|--------------|
-| MVP | [Date] | [List] |
-| Production | [Date] | [List] |
-
-# 7. Testing Strategy
-- Unit testing (80%+ coverage), integration tests, E2E tests
-- 2-3 sample test cases
-- Performance testing targets
-
-# 8. Deployment & DevOps
-- Environments: dev, staging, prod specs
-- CI/CD pipeline steps
-- Monitoring tools and metrics
-
-# 9. Risk Analysis
+# 6. Risk & Budget (¼ page)
 | Risk | Prob | Impact | Mitigation |
 |------|------|--------|------------|
-| [3-5 risks] | H/M/L | H/M/L | [Strategy] |
+| [3 risks] | H/M/L | H/M/L | [1-line strategy] |
 
-# 10. Budget & Resource
-| Item | Estimation |
-|------|------------|
-| Dev hours | [X hours] |
-| Infrastructure/mo | $[X] |
-| Third-party/mo | $[X] |
+| Item | Cost |
+|------|------|
+| Dev (X weeks × team) | $[X] |
+| Infra/month | $[X] |
+| 3rd-party/month | $[X] |
 
-Team: PM [hours], Designer [hours], Frontend [count], Backend [count], DevOps [hours], QA [hours]
-
-# 11. Appendix
-- Glossary: 5-10 key terms
-- References
-- Open questions
-- Change log
+# 7. Task Summary Checklist (¼ page)
+Consolidated checklist of ALL tasks from Section 2, grouped by phase:
+- [ ] Phase 1: T1.1, T1.2, T2.1...
+- [ ] Phase 2: T1.3, T2.2, T3.1...
+- [ ] Phase 3: T3.2, T4.1, T5.1...
 
 ## CRITICAL RULES
-1. COMPLETE ALL 11 SECTIONS - Do not stop early
-2. If low on tokens: complete all sections with minimum content rather than expanding some fully
-3. Use tables and bullet points (space efficient)
-4. Be specific with numbers, timelines, and examples
-5. End with: *Dokumen ini digenerate oleh AI PRD Generator. Versi: 2.0*
+1. MAX 3 PAGES — if over limit, compress tables further, never cut sections
+2. Every task must be specific enough for a developer to start coding
+3. Use ✅ for acceptance criteria and task checkboxes
+4. Numbers everywhere — no "fast", use "<200ms"; no "scalable", use "10K concurrent"
+5. End with: *PRD Generator v3.0 — [date]*
 
 Write in Bahasa Indonesia.`;
 
@@ -324,13 +301,14 @@ export async function POST(req: NextRequest) {
 
     const fullPrompt = `Berikut deskripsi aplikasi yang ingin saya buat:\n\n${prompt}\n\nTarget deployment: ${deploymentLabels[deployment] || deployment}\n\nTolong buatkan PRD yang lengkap dan profesional.`;
 
-    // Determine max tokens based on what can complete within 55 seconds
-    // Vercel limit is 60s, so we need to ensure generation completes in time
+    // Determine max tokens for 3-page PRD
+    // 1 page ≈ 500 words ≈ 700 tokens, so 3 pages ≈ 2100 tokens
+    // Add buffer for tables/formatting: ~3000 tokens total
     const maxTokens = provider === "zai-coding" 
-      ? 6000  // Z.AI: ~4500 words, completes in ~50s
+      ? 3000  // Z.AI: fast, 3 pages with tables
       : provider === "openrouter"
-      ? 5000  // OpenRouter: ~3750 words, completes in ~45s  
-      : 4000; // Gemini: ~3000 words, completes in ~40s
+      ? 2800  // OpenRouter: slightly less for safety
+      : 2500; // Gemini: most conservative
 
     // Stream with timeout 2s before Vercel limit (58s)
     const result = streamText({

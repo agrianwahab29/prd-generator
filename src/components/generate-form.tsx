@@ -521,9 +521,9 @@ export function GenerateForm() {
                           <span className="w-2 h-2 bg-white/90 rounded-full bounce-dot bounce-dot-2" />
                           <span className="w-2 h-2 bg-white/90 rounded-full bounce-dot bounce-dot-3" />
                         </div>
-                        <span className="text-white/90">Menghasilkan PRD Komprehensif...</span>
+                        <span className="text-white/90">Menghasilkan PRD...</span>
                       </div>
-                      <span className="text-xs text-white/60">Ini membutuhkan waktu 1-2 menit untuk dokumen lengkap</span>
+                      <span className="text-xs text-white/60">3 halaman padat dengan task list actionable</span>
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
@@ -572,7 +572,7 @@ export function GenerateForm() {
                       </span>
                       Generating Enterprise PRD
                     </span>
-                    <span className="text-[10px] text-slate-400">11 sections • Full technical specs • Complete architecture</span>
+                    <span className="text-[10px] text-slate-400">7 sections • Task checklist • Tech specs • Timeline</span>
                   </div>
                 )}
                 {isComplete && (
@@ -672,12 +672,12 @@ export function GenerateForm() {
                         Siap Membuat PRD Enterprise?
                       </h3>
                       <p className="text-slate-500 max-w-sm text-sm leading-relaxed mb-4">
-                        Generate dokumen PRD komprehensif dengan 11 section lengkap, spesifikasi teknis detail, arsitektur sistem, timeline development, dan estimasi budget.
+                        Generate PRD padat 3 halaman dengan task list actionable, arsitektur teknis, dan timeline development.
                       </p>
                       <div className="grid grid-cols-2 gap-3 text-xs text-slate-500 mb-4 w-full max-w-xs">
                         <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-2 rounded-lg">
                           <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-                          <span>Product Vision</span>
+                          <span>Task Checklist</span>
                         </div>
                         <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-2 rounded-lg">
                           <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
@@ -685,33 +685,33 @@ export function GenerateForm() {
                         </div>
                         <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-2 rounded-lg">
                           <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-                          <span>User Personas</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-2 rounded-lg">
-                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
                           <span>API Design</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-2 rounded-lg">
-                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-                          <span>Security Arch</span>
                         </div>
                         <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-2 rounded-lg">
                           <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
                           <span>Dev Timeline</span>
                         </div>
+                        <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-2 rounded-lg">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                          <span>Risk Analysis</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-2 rounded-lg">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                          <span>Budget Est.</span>
+                        </div>
                       </div>
                       <div className="flex items-center gap-5 text-xs text-slate-400">
                         <span className="flex items-center gap-1.5">
                           <FileText className="h-3.5 w-3.5 text-indigo-500" />
-                          ~15-20 halaman
+                          ~3 halaman
                         </span>
                         <span className="flex items-center gap-1.5">
                           <Zap className="h-3.5 w-3.5 text-amber-500" />
-                          1-2 menit
+                          30-60 detik
                         </span>
                         <span className="flex items-center gap-1.5">
                           <Code2 className="h-3.5 w-3.5 text-emerald-500" />
-                          Production-ready
+                          Actionable tasks
                         </span>
                       </div>
                     </div>

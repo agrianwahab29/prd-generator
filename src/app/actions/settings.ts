@@ -12,9 +12,25 @@ import { revalidatePath } from "next/cache";
 // These should be set in Vercel dashboard or .env.local
 const DEFAULT_OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || "";
 const DEFAULT_GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
+const DEFAULT_ZAI_API_KEY = process.env.ZAI_API_KEY || "";
 // Default models per provider - Gemini uses "auto" (Google picks best model)
 const DEFAULT_GEMINI_MODEL = "auto";
 const DEFAULT_OPENROUTER_MODEL = "google/gemma-4-31b-it:free";
+const DEFAULT_ZAI_MODEL = "glm-5.1";
+
+// Helper to get default API key by provider
+function getDefaultApiKey(provider: string): string {
+  if (provider === "gemini") return DEFAULT_GEMINI_API_KEY;
+  if (provider === "zai-coding") return DEFAULT_ZAI_API_KEY;
+  return DEFAULT_OPENROUTER_API_KEY;
+}
+
+// Helper to get default model by provider
+function getDefaultModel(provider: string): string {
+  if (provider === "gemini") return DEFAULT_GEMINI_MODEL;
+  if (provider === "zai-coding") return DEFAULT_ZAI_MODEL;
+  return DEFAULT_OPENROUTER_MODEL;
+}
 
 export async function updateApiKey(formData: FormData) {
   const session = await auth.api.getSession({
@@ -36,14 +52,15 @@ export async function updateApiKey(formData: FormData) {
   // Use provided API key or fall back to default from env based on provider
   let finalApiKey = apiKey?.trim();
   if (!finalApiKey) {
-    const defaultKey = provider === "gemini" ? DEFAULT_GEMINI_API_KEY : DEFAULT_OPENROUTER_API_KEY;
+    const defaultKey = getDefaultApiKey(provider);
     if (!defaultKey) {
-      throw new Error(`API Key ${provider === "gemini" ? "Gemini" : "OpenRouter"} tidak tersedia. Silakan masukkan API key Anda sendiri atau hubungi administrator.`);
+      const providerName = provider === "gemini" ? "Gemini" : provider === "zai-coding" ? "Z.AI" : "OpenRouter";
+      throw new Error(`API Key ${providerName} tidak tersedia. Silakan masukkan API key Anda sendiri atau hubungi administrator.`);
     }
     finalApiKey = defaultKey;
   }
   // Set default model based on provider
-  const finalModel = model?.trim() || (provider === "gemini" ? DEFAULT_GEMINI_MODEL : DEFAULT_OPENROUTER_MODEL);
+  const finalModel = model?.trim() || getDefaultModel(provider);
 
   const encrypted = encrypt(finalApiKey);
 
@@ -107,14 +124,14 @@ export async function getUserSettings() {
 
   const s = settings[0];
   // Check if user is using the default key (compare with encrypted env var based on provider)
-  const defaultKey = s.apiProvider === "gemini" ? DEFAULT_GEMINI_API_KEY : DEFAULT_OPENROUTER_API_KEY;
+  const defaultKey = getDefaultApiKey(s.apiProvider || "gemini");
   const isUsingDefaultKey = defaultKey 
     ? s.apiKeyEncrypted === encrypt(defaultKey)
     : false;
 
   return {
     apiProvider: s.apiProvider || "gemini",
-    apiModel: s.apiModel || (s.apiProvider === "gemini" ? DEFAULT_GEMINI_MODEL : DEFAULT_OPENROUTER_MODEL),
+    apiModel: s.apiModel || getDefaultModel(s.apiProvider || "gemini"),
     hasCustomApiKey: !!s.apiKeyEncrypted && !isUsingDefaultKey,
     language: s.language || "id",
     notifyPrdGenerated: s.notifyPrdGenerated === "true",
@@ -224,14 +241,14 @@ export async function getDecryptedApiKey(userId: string): Promise<{ key: string;
   if (settings.length === 0 || !settings[0].apiKeyEncrypted) {
     // Return default API key from environment variable based on provider
     const provider = settings.length > 0 ? (settings[0].apiProvider || "gemini") : "gemini";
-    const defaultKey = provider === "gemini" ? DEFAULT_GEMINI_API_KEY : DEFAULT_OPENROUTER_API_KEY;
+    const defaultKey = getDefaultApiKey(provider);
     if (!defaultKey) {
-      console.error(`${provider === "gemini" ? "GEMINI_API_KEY" : "OPENROUTER_API_KEY"} environment variable is not set`);
+      console.error(`${provider === "gemini" ? "GEMINI_API_KEY" : provider === "zai-coding" ? "ZAI_API_KEY" : "OPENROUTER_API_KEY"} environment variable is not set`);
       return null;
     }
     return {
       key: defaultKey,
-      model: provider === "gemini" ? DEFAULT_GEMINI_MODEL : DEFAULT_OPENROUTER_MODEL,
+      model: getDefaultModel(provider),
       provider,
     };
   }
@@ -241,20 +258,20 @@ export async function getDecryptedApiKey(userId: string): Promise<{ key: string;
     const userProvider = settings[0].apiProvider || "gemini";
     return {
       key: decrypted,
-      model: settings[0].apiModel || (userProvider === "gemini" ? DEFAULT_GEMINI_MODEL : DEFAULT_OPENROUTER_MODEL),
+      model: settings[0].apiModel || getDefaultModel(userProvider),
       provider: userProvider,
     };
   } catch (error) {
     console.error("Failed to decrypt API key:", error);
     // Fall back to default from env
     const provider = settings[0].apiProvider || "gemini";
-    const defaultKey = provider === "gemini" ? DEFAULT_GEMINI_API_KEY : DEFAULT_OPENROUTER_API_KEY;
+    const defaultKey = getDefaultApiKey(provider);
     if (!defaultKey) {
       return null;
     }
     return {
       key: defaultKey,
-      model: provider === "gemini" ? DEFAULT_GEMINI_MODEL : DEFAULT_OPENROUTER_MODEL,
+      model: getDefaultModel(provider),
       provider,
     };
   }
