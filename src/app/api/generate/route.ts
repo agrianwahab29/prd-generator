@@ -357,7 +357,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Create provider based on selected provider
-    // For Gemini: model is "auto" (Google picks the best available model)
+    // For Gemini: use gemini-2.0-flash with fallback chain
     // For OpenRouter: use the user's selected free model with fallback chain
     // For Z.AI Coding: use GLM models via coding endpoint
     
@@ -366,15 +366,13 @@ export async function POST(req: NextRequest) {
       userSettingsResult?.apiModel, // User's preferred model
       "mistralai/mistral-7b-instruct:free", // Fast, stable
       "meta-llama/llama-3.1-8b-instruct:free", // Reliable backup
-      "nousresearch/hermes-3-llama-3.1-405b:free", // Large model backup
+      "nousresearch/hermes-3-llama-3.1-8b:free", // Backup
       "gryphe/mythomax-l2-13b:free", // Final fallback
     ].filter(m => m && m !== "auto" && !m.includes("gemma-4")) as string[];
     
-    let model: string;
-    let fallbackModels: string[] = [];
-    
     if (provider === "gemini") {
-      model = "auto";
+      model = "gemini-2.0-flash";
+      fallbackModels = ["gemini-1.5-flash", "gemini-1.5-pro"];
     } else if (provider === "zai-coding") {
       // Z.AI (ChatGLM) model mapping
       // Model names need to be mapped to correct API identifiers
@@ -460,11 +458,7 @@ export async function POST(req: NextRequest) {
     // Determine max tokens for 3-page PRD
     // 1 page ≈ 500 words ≈ 700 tokens, so 3 pages ≈ 2100 tokens
     // Add buffer for tables/formatting: ~3000 tokens total
-    const maxTokens = provider === "zai-coding" 
-      ? 3000  // Z.AI: fast, 3 pages with tables
-      : provider === "openrouter"
-      ? 2800  // OpenRouter: slightly less for safety
-      : 2500; // Gemini: most conservative
+    const maxTokens = 3000;
 
     // Stream with timeout 2s before Vercel limit (58s)
     console.log("Starting streamText...", { provider, model, maxTokens });

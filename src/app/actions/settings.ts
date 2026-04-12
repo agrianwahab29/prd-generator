@@ -14,8 +14,8 @@ const DEFAULT_OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || "";
 const DEFAULT_GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 const DEFAULT_ZAI_API_KEY = process.env.ZAI_API_KEY || "";
 // Default models per provider - Gemini uses "auto" (Google picks best model)
-const DEFAULT_GEMINI_MODEL = "auto";
-const DEFAULT_OPENROUTER_MODEL = "google/gemma-4-31b-it:free";
+const DEFAULT_GEMINI_MODEL = "gemini-2.0-flash";
+const DEFAULT_OPENROUTER_MODEL = "mistralai/mistral-7b-instruct:free";
 const DEFAULT_ZAI_MODEL = "glm-5.1";
 
 // Helper to get default API key by provider

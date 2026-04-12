@@ -174,7 +174,7 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
     resolver: zodResolver(apiKeySchema),
     defaultValues: {
       provider: initialSettings?.apiProvider || "gemini",
-      model: initialSettings?.apiModel || "google/gemma-4-31b-it:free",
+      model: initialSettings?.apiModel || "gemini-2.0-flash",
       apiKey: "",
     },
   });
@@ -186,11 +186,11 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
 
   useEffect(() => {
     if (provider === "gemini") {
-      setValue("model", "auto");
+      setValue("model", "gemini-2.0-flash");
     } else if (provider === "zai-coding") {
       setValue("model", "glm-5.1");
     } else {
-      setValue("model", "google/gemma-4-31b-it:free");
+      setValue("model", "mistralai/mistral-7b-instruct:free");
     }
   }, [provider, setValue]);
 
@@ -204,7 +204,7 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
         formData.append("apiKey", "");
       }
       formData.append("provider", data.provider);
-      const selectedModel = data.provider === "gemini" ? "auto" : (data.model || "google/gemma-4-31b-it:free");
+      const selectedModel = data.provider === "gemini" ? "gemini-2.0-flash" : (data.model || "mistralai/mistral-7b-instruct:free");
       formData.append("model", selectedModel);
 
       await updateApiKey(formData);
@@ -493,33 +493,33 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
                     <>
                       <button
                         type="button"
-                        onClick={() => setValue("model", "google/gemma-4-31b-it:free")}
+                        onClick={() => setValue("model", "mistralai/mistral-7b-instruct:free")}
                         className={`relative p-4 rounded-xl border text-left transition-all duration-300 tap-scale
-                          ${model === "google/gemma-4-31b-it:free"
+                          ${model === "mistralai/mistral-7b-instruct:free"
                             ? "border-indigo-400 bg-gradient-to-br from-indigo-50/80 to-violet-50/50 shadow-md ring-1 ring-indigo-500/20"
                             : "bg-slate-50/60 border-slate-200/80 hover:border-indigo-300/50 hover:bg-white"
                           }`}
                       >
                         <div className="flex items-center gap-4">
                           <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center shadow-sm
-                            ${model === "google/gemma-4-31b-it:free" ? "bg-gradient-to-br from-blue-500 to-blue-600" : "bg-blue-100"}`}
+                            ${model === "mistralai/mistral-7b-instruct:free" ? "bg-gradient-to-br from-blue-500 to-blue-600" : "bg-blue-100"}`}
                           >
-                            <Sparkles className={`h-5 w-5 ${model === "google/gemma-4-31b-it:free" ? "text-white" : "text-blue-600"}`} />
+                            <Sparkles className={`h-5 w-5 ${model === "mistralai/mistral-7b-instruct:free" ? "text-white" : "text-blue-600"}`} />
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
-                              <span className={`font-semibold text-sm ${model === "google/gemma-4-31b-it:free" ? "text-slate-900" : "text-slate-700"}`}>
-                                Google Gemma 4 31B
+                              <span className={`font-semibold text-sm ${model === "mistralai/mistral-7b-instruct:free" ? "text-slate-900" : "text-slate-700"}`}>
+                                Mistral 7B Instruct
                               </span>
                               <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200/50">
                                 Free
                               </span>
                             </div>
-                            <p className={`text-xs mt-0.5 ${model === "google/gemma-4-31b-it:free" ? "text-indigo-700/70" : "text-slate-500"}`}>
-                              Model gratis dengan performa tinggi untuk PRD
+                            <p className={`text-xs mt-0.5 ${model === "mistralai/mistral-7b-instruct:free" ? "text-indigo-700/70" : "text-slate-500"}`}>
+                              Model gratis yang cepat dan stabil untuk PRD
                             </p>
                           </div>
-                          {model === "google/gemma-4-31b-it:free" && (
+                          {model === "mistralai/mistral-7b-instruct:free" && (
                             <Check className="h-5 w-5 text-indigo-500" />
                           )}
                         </div>
@@ -527,33 +527,33 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
 
                       <button
                         type="button"
-                        onClick={() => setValue("model", "openai/gpt-oss-120b:free")}
+                        onClick={() => setValue("model", "meta-llama/llama-3.1-8b-instruct:free")}
                         className={`relative p-4 rounded-xl border text-left transition-all duration-300 tap-scale
-                          ${model === "openai/gpt-oss-120b:free"
+                          ${model === "meta-llama/llama-3.1-8b-instruct:free"
                             ? "border-indigo-400 bg-gradient-to-br from-indigo-50/80 to-violet-50/50 shadow-md ring-1 ring-indigo-500/20"
                             : "bg-slate-50/60 border-slate-200/80 hover:border-indigo-300/50 hover:bg-white"
                           }`}
                       >
                         <div className="flex items-center gap-4">
                           <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center shadow-sm
-                            ${model === "openai/gpt-oss-120b:free" ? "bg-gradient-to-br from-emerald-500 to-emerald-600" : "bg-emerald-100"}`}
+                            ${model === "meta-llama/llama-3.1-8b-instruct:free" ? "bg-gradient-to-br from-emerald-500 to-emerald-600" : "bg-emerald-100"}`}
                           >
-                            <Brain className={`h-5 w-5 ${model === "openai/gpt-oss-120b:free" ? "text-white" : "text-emerald-600"}`} />
+                            <Brain className={`h-5 w-5 ${model === "meta-llama/llama-3.1-8b-instruct:free" ? "text-white" : "text-emerald-600"}`} />
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
-                              <span className={`font-semibold text-sm ${model === "openai/gpt-oss-120b:free" ? "text-slate-900" : "text-slate-700"}`}>
-                                OpenAI GPT-OSS 120B
+                              <span className={`font-semibold text-sm ${model === "meta-llama/llama-3.1-8b-instruct:free" ? "text-slate-900" : "text-slate-700"}`}>
+                                Llama 3.1 8B
                               </span>
                               <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200/50">
                                 Free
                               </span>
                             </div>
-                            <p className={`text-xs mt-0.5 ${model === "openai/gpt-oss-120b:free" ? "text-indigo-700/70" : "text-slate-500"}`}>
-                              Model open-source gratis dari OpenAI
+                            <p className={`text-xs mt-0.5 ${model === "meta-llama/llama-3.1-8b-instruct:free" ? "text-indigo-700/70" : "text-slate-500"}`}>
+                              Model open-source gratis dari Meta
                             </p>
                           </div>
-                          {model === "openai/gpt-oss-120b:free" && (
+                          {model === "meta-llama/llama-3.1-8b-instruct:free" && (
                             <Check className="h-5 w-5 text-indigo-500" />
                           )}
                         </div>
@@ -573,8 +573,8 @@ function ApiKeySettings({ initialSettings }: { initialSettings: UserSettings | n
                     <Bot className="h-5 w-5 text-blue-600" />
                   </div>
                   <div>
-                    <p className="font-semibold text-sm text-slate-800">Auto-Select</p>
-                    <p className="text-xs text-slate-500">Google akan memilih model terbaik berdasarkan ketersediaan kuota</p>
+                    <p className="font-semibold text-sm text-slate-800">Gemini 2.0 Flash</p>
+                    <p className="text-xs text-slate-500">Model terbaik dari Google dengan respons cepat dan kualitas tinggi</p>
                   </div>
                 </div>
               </div>
