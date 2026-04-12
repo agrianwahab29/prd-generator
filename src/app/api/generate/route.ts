@@ -270,9 +270,10 @@ export async function POST(req: NextRequest) {
       const storedModel = userSettingsResult?.apiModel;
       model = storedModel || "glm-5.1";
     } else {
-      // OpenRouter - use the stored model or default to gemma
+      // OpenRouter - use the stored model or default to more stable model
+      // google/gemma-4-31b-it:free often gets rate limited, use mistral or llama instead
       const storedModel = userSettingsResult?.apiModel;
-      model = storedModel && storedModel !== "auto" ? storedModel : "google/gemma-4-31b-it:free";
+      model = storedModel && storedModel !== "auto" ? storedModel : "mistralai/mistral-7b-instruct:free";
     }
 
     let providerConfig;
@@ -460,6 +461,36 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Handle AI Retry Error (max retries exceeded)
+    if (error instanceof Error && (error.message.includes("maxRetriesExceeded") || error.message.includes("Failed after"))) {
+      // Check the last error for specific details
+      const lastError = (error as { lastError?: { statusCode?: number; responseBody?: string } }).lastError;
+      const lastErrorStatus = lastError?.statusCode;
+      const lastErrorBody = lastError?.responseBody || "";
+      
+      if (lastErrorStatus === 429 || lastErrorBody.includes("rate-limited") || lastErrorBody.includes("rate limit")) {
+        let providerHint: string;
+        if (provider === "gemini") {
+          providerHint = "API key Gemini gratis memiliki batas penggunaan harian. Jika habis, Anda bisa membuat API key baru di Google AI Studio.";
+        } else if (provider === "zai-coding") {
+          providerHint = "Z.AI Coding Plan memiliki rate limit. Tunggu beberapa saat atau cek dashboard Z.AI.";
+        } else {
+          providerHint = "Model OpenRouter yang dipakai sedang mengalami rate limit. Coba lagi dalam 1-2 menit, atau tambahkan API key sendiri di OpenRouter untuk limit lebih tinggi.";
+        }
+
+        const providerName = provider === "gemini" ? "Gemini" : provider === "zai-coding" ? "Z.AI" : "OpenRouter";
+
+        return NextResponse.json(
+          {
+            error: `${providerName} rate limit tercapai setelah beberapa percobaan. ${providerHint}`,
+            code: "RATE_LIMIT_RETRY",
+            details: lastErrorBody
+          },
+          { status: 429 }
+        );
+      }
+    }
+
     const message =
       error instanceof Error ? error.message : "Terjadi kesalahan internal";
 
@@ -475,14 +506,14 @@ export async function POST(req: NextRequest) {
     }
 
     // Check for rate limit / quota exceeded errors
-    if (message.includes("429") || message.includes("rate limit") || message.toLowerCase().includes("quota")) {
+    if (message.includes("429") || message.includes("rate limit") || message.toLowerCase().includes("quota") || message.includes("rate-limited")) {
       let providerHint: string;
       if (provider === "gemini") {
         providerHint = "API key Gemini gratis memiliki batas penggunaan harian. Jika habis, Anda bisa membuat API key baru di Google AI Studio atau menunggu reset otomatis keesokan harinya.";
       } else if (provider === "zai-coding") {
         providerHint = "Z.AI Coding Plan memiliki rate limit. Jika terlalu banyak request, tunggu beberapa saat atau cek dashboard Z.AI untuk status kuota Anda.";
       } else {
-        providerHint = "Model gratis OpenRouter memiliki limit harian. Jika habis, Anda bisa membuat API key baru di OpenRouter atau upgrade untuk limit lebih tinggi.";
+        providerHint = "Model OpenRouter yang dipakai sedang mengalami rate limit. Model gratis sering mengalami limit ini saat traffic tinggi. Coba lagi dalam 1-2 menit, atau tambahkan API key sendiri di OpenRouter untuk limit lebih tinggi.";
       }
 
       const providerName = provider === "gemini" ? "Gemini" : provider === "zai-coding" ? "Z.AI" : "OpenRouter";
